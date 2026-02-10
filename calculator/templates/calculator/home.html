@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TankMate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'calculator/css/style.css' %}">
+  <link rel="icon" type="image/x-icon" href="{% static 'calculator/icons/favicon.png' %}">
+  <link rel="manifest" href="{% static 'calculator/manifest.json' %}">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-wrapper">
+      <div class="header-brand">
+
+        <div class="brand-icon">
+          <img src="{% static 'calculator/icons/header_icon.png' %}" alt="TankMate Logo">
+        </div>
+
+        <div class="brand-text">
+          <h1 class="brand-title">TankMate</h1>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+
+  <main class="main-content">
+    
+    <!-- Step 1: Tank Type Selection (Initial View) -->
+    <section id="tankTypeSelection" class="tank-type-section">
+      <div class="section-header">
+        <h2 class="section-title">Find Your Tank</h2>
+        <p class="section-description">Accurate tank selection made simple</p>
+      </div>
+      
+      <div class="tank-cards">
+        
+        <div class="tank-card" data-type="RCT" onclick="selectTankType('RCT')">
+          <div class="tank-card-visual">
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/rct.jpeg' %}')"></div>
+          </div>
+          <div class="tank-card-content">
+            <div class="card-header">
+              <h3 class="card-title">Rhino Commercial Tanks</h3>
+              <div class="card-type-indicator">
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="capacity-info">
+                <span class="capacity-label">Max Capacity</span>
+                <span class="capacity-value">10 KL - 3000 KL </span>
+              </div>
+              <div class="card-action">
+                <span class="action-text">Configure</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tank-card" data-type="SST" onclick="selectTankType('SST')">
+          <div class="tank-card-visual">
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/sst.png' %}')"></div>
+          </div>
+          <div class="tank-card-content">
+            <div class="card-header">
+              <h3 class="card-title">SecureStore Tanks</h3>
+              <div class="card-type-indicator sst-type">
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <div class="capacity-info">
+                <span class="capacity-label">Max Capacity</span>
+                <span class="capacity-value">25 KL - 10,000 KL </span>
+              </div>
+              <div class="card-action sst-action">
+                <span class="action-text">Configure</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tank-card" data-type="FM" onclick="selectTankType('FM')">
+          <div class="tank-card-visual">
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/fm.png' %}')"></div>
+          </div>
+          <div class="tank-card-content">
+            <div class="card-header">
+              <h3 class="card-title">FM Approved Tanks</h3>
+              <div class="card-type-indicator fm-type">
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <div class="capacity-info">
+                <span class="capacity-label">Max Capacity</span>
+                <span class="capacity-value">37 KL - 600 KL </span>
+              </div>
+              <div class="card-action fm-action">
+                <span class="action-text">Configure</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Step 2: Unified Search Interface (Hidden initially) -->
+    <section id="searchInterface" class="search-section" style="display: none;">
+      
+      <div class="search-header">
+        <button class="back-button" onclick="changeTankType()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M12 16L6 10L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Change Tank Type</span>
+        </button>
+        
+        <div class="selected-tank-pill">
+          <div class="pill-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <circle cx="8" cy="8" r="3" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="pill-content">
+            <span class="pill-label">Selected Tank</span>
+            <span id="selectedTankName" class="pill-value"></span>
+          </div>
+          <div class="pill-verified">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0L10.1 2.1L13 2.5L10.5 5L11.1 7.9L8 6.4L4.9 7.9L5.5 5L3 2.5L5.9 2.1L8 0Z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-form-container">
+        <h2 class="form-title">Find Your Tank</h2>
+        <p class="form-subtitle">Enter any combination of parameters below</p>
+
+        <form id="tankSearchForm" onsubmit="handleSearch(event)">
+          
+          <div class="form-fields">
+            
+            <div class="form-field">
+              <label for="capacityInput" class="field-label">
+                Capacity
+                <span class="optional-badge">Optional</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="number" 
+                  id="capacityInput" 
+                  class="field-input"
+                  placeholder="e.g., 100"
+                  step="0.01"
+                  min="0"
+                >
+                <span class="input-unit">KL</span>
+              </div>
+            </div>
+
+            <div class="form-field autocomplete-field">
+              <label for="modelInput" class="field-label">
+                Tank Model
+                <span class="optional-badge">Optional</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="text" 
+                  id="modelInput" 
+                  class="field-input"
+                  placeholder="Type to search..."
+                  autocomplete="off"
+                  spellcheck="false"
+                >
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M10 10L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </span>
+              </div>
+              <!-- Custom autocomplete dropdown -->
+              <div id="modelDropdown" class="autocomplete-dropdown"></div>
+              <!-- Results counter -->
+              <div id="modelResultsCount" class="field-hint"></div>
+            </div>
+
+            <div class="form-field-row">
+              <div class="form-field">
+                <label for="diameterInput" class="field-label">
+                  Diameter
+                  <span class="optional-badge">Optional</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="number" 
+                    id="diameterInput" 
+                    class="field-input"
+                    placeholder="e.g., 5.5"
+                    step="any"
+                    inputmode="decimal"
+                    min="0"
+                  >
+                  <span class="input-unit">m</span>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="heightInput" class="field-label">
+                  Height
+                  <span class="optional-badge">Optional</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="number" 
+                    id="heightInput" 
+                    class="field-input"
+                    placeholder="e.g., 3.6"
+                    step="any"
+                    inputmode="decimal"
+                    min="0"
+                  >
+                  <span class="input-unit">m</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <button type="submit" class="search-button">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2"/>
+              <path d="M12.5 12.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Search Tanks</span>
+          </button>
+
+        </form>
+
+        <div id="volumeInfo" class="volume-info"></div>
+
+      </div>
+
+    </section>
+
+    <!-- Results Section -->
+    <section id="resultsSection" class="results-section">
+      <div id="resultsHeader" class="results-header"></div>
+      <div id="resultsGrid" class="results-grid"></div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-content">
+    </div>
+  </footer>
+
+  <script src="{% static 'calculator/js/app.js' %}"></script>
+</body>
+</html>
