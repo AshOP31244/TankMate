@@ -38,7 +38,7 @@ class Tank(models.Model):
             return self.model
 
         # Multiply directly to avoid floating point issues
-        height_suffix = int(round(height * 10))
+        height_suffix = int(height * 10)
 
         # RCT → always 2 digits
         if self.tank_type == "RCT":
