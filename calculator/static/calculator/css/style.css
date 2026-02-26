@@ -711,6 +711,7 @@ body {
 .results-section {
   max-width: 1500px;
   margin: 0 auto;
+  display: none;
 }
 
 .results-section.show {
