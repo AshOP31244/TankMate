@@ -1,15 +1,14 @@
 from django.contrib import admin
-from .models import Tank, TankCapacity
+from .models import Tank
 
 
-class TankCapacityInline(admin.TabularInline):
-    model = TankCapacity
-    extra = 0
 
 
 @admin.register(Tank)
 class TankAdmin(admin.ModelAdmin):
-    list_display = ("tank_type", "model", "diameter")
-    list_filter = ("tank_type",)
+    # use existing fields on Tank model
+    list_display = ("category", "model", "diameter")
+    list_filter = ("category",)
     search_fields = ("model",)
-    inlines = [TankCapacityInline]
+    # no inlines needed
+

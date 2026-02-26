@@ -709,8 +709,8 @@ body {
 
 /* ==================== Results Section ==================== */
 .results-section {
-  display: none;
-  margin-top: var(--spacing-2xl);
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .results-section.show {
@@ -1382,3 +1382,392 @@ body {
     outline-offset: -2px;
   }
 }
+
+
+/* ============================================
+   TankMate - CSS Additions for Refactoring
+   Add these styles to your existing style.css
+   ============================================ */
+
+/* ==================== GFS Card Styling ==================== */
+
+/* GFS Card Badge */
+.gfs-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* GFS Card Type Indicator */
+.gfs-type .type-dot {
+  background: #10B981;
+}
+
+.gfs-type .type-label {
+  color: #10B981;
+}
+
+/* GFS Card Action Button */
+.gfs-action {
+  background: #10B981;
+  color: white;
+}
+
+.tank-card[data-category="GFS"]:hover .card-action {
+  background: #059669;
+}
+
+/* GFS Card Gradient Background */
+.gfs-gradient {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+/* ==================== Universal Search Card Styling ==================== */
+
+/* Universal Card Badge */
+.universal-badge {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Universal Card Type Indicator */
+.universal-type .type-dot {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  width: 8px;
+  height: 8px;
+}
+
+.universal-type .type-label {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: var(--font-weight-bold);
+}
+
+/* Universal Card Action Button */
+.universal-action {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+  color: white;
+}
+
+.tank-card.universal-card:hover .card-action {
+  background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+}
+
+/* Universal Card Gradient Background */
+.universal-gradient {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #3B82F6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.universal-gradient::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%);
+  animation: gradientShift 10s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ==================== Result Card Pricing Section ==================== */
+
+.pricing-section {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.price-row:last-child {
+  border-bottom: none;
+}
+
+.price-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.price-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.price-per-kl {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 2px solid var(--color-border);
+}
+
+.price-per-kl .price-value {
+  color: var(--color-primary);
+  font-size: var(--font-size-base);
+}
+
+/* ==================== Category Badges in Results ==================== */
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: var(--spacing-sm);
+}
+
+.category-badge-rct {
+  background: rgba(30, 41, 59, 0.1);
+  color: var(--color-rct);
+  border: 1px solid rgba(30, 41, 59, 0.2);
+}
+
+.category-badge-sst {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--color-sst);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+.category-badge-sfm {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-fm);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.category-badge-gfs {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* ==================== Autocomplete Category Badges ==================== */
+
+.autocomplete-item-meta .category-badge-rct,
+.autocomplete-item-meta .category-badge-sst,
+.autocomplete-item-meta .category-badge-sfm,
+.autocomplete-item-meta .category-badge-gfs {
+  padding: 2px 8px;
+  font-size: 10px;
+  margin-right: 6px;
+}
+
+/* ==================== Price Filter Section ==================== */
+
+#priceFilterSection {
+  animation: slideDown var(--transition-base) ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+    overflow: visible;
+  }
+}
+
+/* ==================== Sort Select Styling ==================== */
+
+#sortBySelect {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%236E6E73' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  padding-right: calc(var(--spacing-md) + 24px);
+}
+
+#sortBySelect:focus {
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23007AFF' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* ==================== Enhanced Result Card ==================== */
+
+.result-card .specs-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+
+/* .result-card .specs-grid .spec-row:nth-child(4) {
+  grid-column: 1 / -1;
+} */
+
+.result-card .specs-grid .spec-row:nth-child(4) .spec-value {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* ==================== Responsive Adjustments ==================== */
+
+/* Mobile: Stack cards vertically */
+@media (max-width: 768px) {
+  .tank-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .pricing-section {
+    padding: var(--spacing-sm);
+  }
+  
+  .price-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+  
+  .price-value {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Tablet: 2 columns */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tank-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Make Universal Search card span full width on tablet */
+  .tank-card.universal-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Desktop: 3 columns, then 2 for last row */
+@media (min-width: 1024px) {
+  .tank-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  /* GFS and Universal cards on second row */
+  .tank-card[data-category="GFS"],
+  .tank-card.universal-card {
+    grid-column: span 1;
+  }
+}
+
+/* ==================== Loading States ==================== */
+
+.pricing-section.loading {
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.05) 0%, 
+    rgba(139, 92, 246, 0.1) 50%, 
+    rgba(59, 130, 246, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ==================== Print Styles ==================== */
+
+@media print {
+  .pricing-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .category-badge {
+    border: 1px solid black !important;
+  }
+  
+  .gfs-gradient,
+  .universal-gradient {
+    background: #f5f5f7 !important;
+  }
+}
+
+/* ==================== High Contrast Mode ==================== */
+
+@media (prefers-contrast: high) {
+  .gfs-badge,
+  .universal-badge {
+    border-width: 2px;
+  }
+  
+  .pricing-section {
+    border-width: 2px;
+  }
+  
+  .category-badge {
+    border-width: 2px;
+  }
+}
+
+/* ==================== Accessibility Enhancements ==================== */
+
+/* Focus visible for price inputs */
+#minPriceInput:focus,
+#maxPriceInput:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Keyboard navigation for sort select */
+#sortBySelect:focus {
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+/* Screen reader only text for category badges */
+.category-badge::before {
+  content: 'Category: ';
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+

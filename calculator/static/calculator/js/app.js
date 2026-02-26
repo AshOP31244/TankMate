@@ -1,45 +1,50 @@
 // ============================================
-// TankMate - Professional Tank Selection App
-// Enhanced with Smart Autocomplete (No Loading State)
+// TankMate - Refactored with 5 Categories + Universal Search
+// RCT | SST | SFM | GFS | ALL (Universal)
 // ============================================
 
-const TANK_CONFIG = {
+const CATEGORY_CONFIG = {
   RCT: {
     code: "RCT",
     name: "Rhino Commercial Tank",
     short: "RCT",
     description: "Commercial liquid water storage solutions",
-    capacityRange: "15 – 500 KL",
-    unit: "Litres → KL"
+    unit: "KL"
   },
   SST: {
     code: "SST",
     name: "SecureStore Micro-Coated Tanks",
     short: "SST",
     description: "Large-scale industrial storage solutions",
-    capacityRange: "28 – 10,000+ KL",
-    unit: "m³ (KL)"
+    unit: "KL"
   },
-  FM: {
-    code: "FM",
+  SFM: {
+    code: "SFM",
     name: "Factory Mutual Tanks",
-    short: "FM",
+    short: "SFM",
     description: "Factory Mutual storage systems",
-    capacityRange: "53 – 602 KL",
-    unit: "Litres → KL"
+    unit: "KL"
+  },
+  GFS: {
+    code: "GFS",
+    name: "Glass Fiber Sheets Tank",
+    short: "GFS",
+    description: "Lightweight glass fiber reinforced tanks",
+    unit: "KL"
+  },
+  ALL: {
+    code: "ALL",
+    name: "Universal Search",
+    short: "All Categories",
+    description: "Search across all tank categories",
+    unit: "KL"
   }
-};
-
-const MODEL_PLACEHOLDERS = {
-  RCT: "e.g., RCT 80",
-  SST: "e.g., SST 25",
-  FM:  "e.g., SFM135-24"
 };
 
 // ============================================
 // Global State
 // ============================================
-let selectedTankType = null;
+let selectedCategory = null;
 let autocompleteTimeout = null;
 let currentSuggestions = [];
 let selectedSuggestionIndex = -1;
@@ -48,12 +53,8 @@ let selectedSuggestionIndex = -1;
 // Initialize App
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('TankMate initialized');
-  
-  // Add smooth scroll behavior
+  console.log('TankMate initialized - 5 categories + Universal Search');
   document.documentElement.style.scrollBehavior = 'smooth';
-  
-  // Setup global event listeners
   setupGlobalListeners();
 });
 
@@ -61,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Setup Global Event Listeners
 // ============================================
 function setupGlobalListeners() {
-  // Close dropdown on outside click
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('modelDropdown');
     const input = document.getElementById('modelInput');
@@ -70,7 +70,6 @@ function setupGlobalListeners() {
     }
   });
   
-  // Close dropdown on escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       hideAutocompleteDropdown();
@@ -79,31 +78,36 @@ function setupGlobalListeners() {
 }
 
 // ============================================
-// Tank Type Selection (Initial Step)
+// Category Selection (5 Cards)
 // ============================================
-function selectTankType(type) {
-  selectedTankType = type;
+function selectCategory(category) {
+  selectedCategory = category;
   
-  // Hide tank selection, show search interface
-  const tankTypeSection = document.getElementById('tankTypeSelection');
+  const categoryTypeSection = document.getElementById('tankTypeSelection');
   const searchInterface = document.getElementById('searchInterface');
   
-  tankTypeSection.style.display = 'none';
+  categoryTypeSection.style.display = 'none';
   searchInterface.style.display = 'block';
   
-  // Update selected tank name
-  const tank = TANK_CONFIG[type];
-  document.getElementById('selectedTankName').textContent =
-    `${tank.short} - ${tank.name}`;
+  // Update selected category name
+  const config = CATEGORY_CONFIG[category];
+  document.getElementById('selectedCategoryName').textContent = config.name;
   
-  // Update model placeholder
-  const modelInput = document.getElementById("modelInput");
-  modelInput.placeholder = MODEL_PLACEHOLDERS[type] || "Type to search models...";
+  // Show/hide price filter (only for universal search)
+  const priceFilterSection = document.getElementById('priceFilterSection');
+  if (category === 'ALL') {
+    priceFilterSection.style.display = 'grid';
+  } else {
+    priceFilterSection.style.display = 'none';
+    // Clear price inputs
+    document.getElementById('minPriceInput').value = '';
+    document.getElementById('maxPriceInput').value = '';
+  }
   
   // Setup autocomplete
   setupAutocomplete();
   
-  // Clear any previous results
+  // Clear previous results
   clearResults();
   
   // Scroll to search interface
@@ -118,12 +122,10 @@ function selectTankType(type) {
 function setupAutocomplete() {
   const modelInput = document.getElementById('modelInput');
   
-  // Remove old listeners to prevent duplicates
   modelInput.removeEventListener('input', handleModelInput);
   modelInput.removeEventListener('focus', handleModelFocus);
   modelInput.removeEventListener('keydown', handleModelKeydown);
   
-  // Add new listeners
   modelInput.addEventListener('input', handleModelInput);
   modelInput.addEventListener('focus', handleModelFocus);
   modelInput.addEventListener('keydown', handleModelKeydown);
@@ -135,22 +137,18 @@ function setupAutocomplete() {
 function handleModelInput(event) {
   const query = event.target.value.trim();
   
-  // Clear previous timeout
   if (autocompleteTimeout) {
     clearTimeout(autocompleteTimeout);
   }
   
-  // Reset selected index
   selectedSuggestionIndex = -1;
   
-  // Debounce: wait 200ms after user stops typing
   autocompleteTimeout = setTimeout(() => {
     if (query.length >= 2) {
       searchModels(query);
     } else if (query.length === 0) {
-      loadModels(selectedTankType); // Load all if empty
+      loadModels(selectedCategory);
     } else {
-      // Hide dropdown if only 1 character
       hideAutocompleteDropdown();
       updateResultsCount('');
     }
@@ -158,14 +156,13 @@ function handleModelInput(event) {
 }
 
 // ============================================
-// Handle Model Focus (Show All Options)
+// Handle Model Focus
 // ============================================
 function handleModelFocus(event) {
   const query = event.target.value.trim();
   if (!query) {
-    loadModels(selectedTankType);
+    loadModels(selectedCategory);
   } else if (query.length >= 2 && currentSuggestions.length > 0) {
-    // Show existing suggestions if available
     showAutocompleteDropdown();
   }
 }
@@ -222,12 +219,18 @@ function updateSelectedSuggestion(items) {
 }
 
 // ============================================
-// Search Models with Query (Fuzzy Search)
+// Search Models with Query
 // ============================================
 function searchModels(query) {
-  if (!selectedTankType) return;
+  if (!selectedCategory) return;
 
-  fetch(`/api/models/?tank_type=${selectedTankType}&q=${encodeURIComponent(query)}`)
+  // Build URL based on category
+  let url = `/api/models/?q=${encodeURIComponent(query)}`;
+  if (selectedCategory !== 'ALL') {
+    url += `&category=${selectedCategory}`;
+  }
+
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       currentSuggestions = data.models || [];
@@ -240,12 +243,17 @@ function searchModels(query) {
 }
 
 // ============================================
-// Load All Models (No Filter)
+// Load All Models
 // ============================================
-function loadModels(tankType) {
-  if (!tankType) return;
+function loadModels(category) {
+  if (!category) return;
   
-  fetch(`/api/models/?tank_type=${tankType}`)
+  let url = `/api/models/`;
+  if (category !== 'ALL') {
+    url += `?category=${category}`;
+  }
+  
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       currentSuggestions = data.models || [];
@@ -266,10 +274,8 @@ function updateModelSuggestions(models, highlightQuery = '') {
   dropdown.innerHTML = '';
   selectedSuggestionIndex = -1;
   
-  // Update results counter
   updateResultsCount(models, highlightQuery);
   
-  // Handle empty results
   if (!models || models.length === 0) {
     if (highlightQuery) {
       dropdown.innerHTML = `
@@ -289,21 +295,27 @@ function updateModelSuggestions(models, highlightQuery = '') {
     return;
   }
   
-  // Create dropdown items
   models.forEach((model, index) => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
     item.setAttribute('data-index', index);
     
-    // Build item content
     const modelName = highlightMatch(model.model, highlightQuery);
     const metadata = [];
+    
+    // NEW: Show category badge for universal search
+    if (selectedCategory === 'ALL') {
+      metadata.push(`<span class="category-badge-${model.category.toLowerCase()}">${model.category}</span>`);
+    }
     
     if (model.diameter) {
       metadata.push(`Ø ${model.diameter}m`);
     }
-    if (model.capacity_count) {
-      metadata.push(`${model.capacity_count} variant${model.capacity_count !== 1 ? 's' : ''}`);
+    if (model.height) {
+      metadata.push(`H ${model.height}m`);
+    }
+    if (model.net_capacity) {
+      metadata.push(`${model.net_capacity} KL`);
     }
     
     item.innerHTML = `
@@ -315,12 +327,10 @@ function updateModelSuggestions(models, highlightQuery = '') {
       ` : ''}
     `;
     
-    // Click handler
     item.addEventListener('click', () => {
       selectModel(model.model);
     });
     
-    // Hover handler
     item.addEventListener('mouseenter', () => {
       selectedSuggestionIndex = index;
       updateSelectedSuggestion(dropdown.querySelectorAll('.autocomplete-item'));
@@ -357,14 +367,10 @@ function updateResultsCount(models, highlightQuery = '') {
 // ============================================
 function highlightMatch(text, query) {
   if (!query) return text;
-  
   const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
   return text.replace(regex, '<mark>$1</mark>');
 }
 
-// ============================================
-// Escape Regex Special Characters
-// ============================================
 function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -377,7 +383,6 @@ function selectModel(modelName) {
   modelInput.value = modelName;
   hideAutocompleteDropdown();
   
-  // Optional: Show success feedback
   const resultsCount = document.getElementById('modelResultsCount');
   if (resultsCount) {
     resultsCount.textContent = `✓ ${modelName} selected`;
@@ -428,31 +433,27 @@ function showAutocompleteError() {
 }
 
 // ============================================
-// Change Tank Type (Go Back)
+// Change Category (Go Back)
 // ============================================
-function changeTankType() {
-  selectedTankType = null;
+function changeCategory() {
+  selectedCategory = null;
   
-  // Show tank selection, hide search interface
-  const tankTypeSection = document.getElementById('tankTypeSelection');
+  const categoryTypeSection = document.getElementById('tankTypeSelection');
   const searchInterface = document.getElementById('searchInterface');
   
-  tankTypeSection.style.display = 'block';
+  categoryTypeSection.style.display = 'block';
   searchInterface.style.display = 'none';
   
-  // Clear form and results
   document.getElementById('tankSearchForm').reset();
   clearResults();
   hideAutocompleteDropdown();
   
-  // Clear autocomplete state
   const resultsCount = document.getElementById('modelResultsCount');
   if (resultsCount) {
     resultsCount.textContent = '';
     resultsCount.className = 'field-hint';
   }
   
-  // Scroll to top
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -462,12 +463,10 @@ function changeTankType() {
 function handleSearch(event) {
   event.preventDefault();
   
-  // Hide autocomplete if open
   hideAutocompleteDropdown();
   
-  // Validate tank type selected
-  if (!selectedTankType) {
-    showNotification('Please select a tank type first', 'error');
+  if (!selectedCategory) {
+    showNotification('Please select a category first', 'error');
     return;
   }
   
@@ -476,22 +475,31 @@ function handleSearch(event) {
   const model = document.getElementById('modelInput').value.trim();
   const diameter = document.getElementById('diameterInput').value.trim();
   const height = document.getElementById('heightInput').value.trim();
+  const minPrice = document.getElementById('minPriceInput').value.trim();
+  const maxPrice = document.getElementById('maxPriceInput').value.trim();
+  const sortBy = document.getElementById('sortBySelect').value;
   
   // Validate at least one input
-  if (!capacity && !model && !diameter && !height) {
+  if (!capacity && !model && !diameter && !height && !minPrice && !maxPrice) {
     showNotification('Please enter at least one search parameter', 'error');
     return;
   }
   
   // Build query parameters
-  const params = new URLSearchParams({
-    tank_type: selectedTankType
-  });
+  const params = new URLSearchParams();
+  
+  // Add category (unless universal search)
+  if (selectedCategory !== 'ALL') {
+    params.append('category', selectedCategory);
+  }
   
   if (capacity) params.append('capacity', capacity);
   if (model) params.append('model', model);
   if (diameter) params.append('diameter', diameter);
   if (height) params.append('height', height);
+  if (minPrice) params.append('min_price', minPrice);
+  if (maxPrice) params.append('max_price', maxPrice);
+  if (sortBy) params.append('sort_by', sortBy);
   
   // Show calculated volume if both diameter and height provided
   if (diameter && height) {
@@ -558,24 +566,31 @@ function displayResults(data) {
   let headerText = '';
   const searchInfo = data.search_info;
   
-  if (searchInfo.search_type === 'capacity') {
+  if (searchInfo.category === 'all') {
+    headerText = `Universal Search: ${data.count} tank${data.count !== 1 ? 's' : ''} found`;
+  } else if (searchInfo.search_type === 'capacity') {
     headerText = `Found ${data.count} tank${data.count !== 1 ? 's' : ''} for ${searchInfo.capacity_kl} KL`;
-    if (searchInfo.lower_bound !== null) {
-      headerText += ` (Range: ${searchInfo.lower_bound.toFixed(0)} - ${searchInfo.upper_bound.toFixed(0)} KL)`;
-    }
   } else if (searchInfo.search_type === 'model') {
     headerText = `Results for model: ${searchInfo.query}`;
   } else if (searchInfo.search_type === 'dimensions') {
-    headerText = `${data.count} approximate match${data.count !== 1 ? 'es' : ''} for ${searchInfo.diameter}m × ${searchInfo.height}m`;
-  } else if (searchInfo.search_type === 'diameter') {
-    headerText = `${data.count} tank${data.count !== 1 ? 's' : ''} with diameter ≈ ${searchInfo.diameter}m`;
-  } else if (searchInfo.search_type === 'height') {
-    headerText = `${data.count} tank${data.count !== 1 ? 's' : ''} with height ≈ ${searchInfo.height}m`;
+    headerText = `${data.count} match${data.count !== 1 ? 'es' : ''} for ${searchInfo.diameter}m × ${searchInfo.height}m`;
+  } else {
+    headerText = `${data.count} result${data.count !== 1 ? 's' : ''} found`;
+  }
+  
+  // Add sorting info
+  if (searchInfo.sorted_by) {
+    const sortLabels = {
+      'price_low_to_high': 'Sorted: Price (Low to High)',
+      'price_high_to_low': 'Sorted: Price (High to Low)',
+      'capacity_low_to_high': 'Sorted: Capacity (Low to High)'
+    };
+    headerText += ` • ${sortLabels[searchInfo.sorted_by] || ''}`;
   }
   
   resultsHeader.innerHTML = `
     <h3>${headerText}</h3>
-    <p>${data.count} result${data.count !== 1 ? 's' : ''} found</p>
+    <p>${data.count} result${data.count !== 1 ? 's' : ''}</p>
   `;
   
   // Display results
@@ -586,19 +601,18 @@ function displayResults(data) {
   
   resultsSection.classList.add('show');
   
-  // Scroll to results
   setTimeout(() => {
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
 
 // ============================================
-// Create Result Card
+// Create Result Card (WITH NEW FIELDS)
 // ============================================
 function createResultCard(tank) {
   const card = document.createElement('div');
   card.className = 'result-card';
-  
+   
   let matchInfo = '';
   
   if (tank.match_label) {
@@ -618,12 +632,6 @@ function createResultCard(tank) {
         ${tank.match_difference !== undefined ? ` (Δ ${tank.match_difference} KL)` : ''}
       </div>
     `;
-  } else if (tank.match_difference !== undefined) {
-    matchInfo = `
-      <div class="match-info">
-        Match difference: ${tank.match_difference} KL
-      </div>
-    `;
   } else if (tank.match_type === 'approximate') {
     matchInfo = `
       <div class="match-info">
@@ -637,6 +645,7 @@ function createResultCard(tank) {
     <div class="card-header">
       <div class="model-name">
         ${tank.model}
+        
       </div>
       <button class="copy-icon-btn"
         onclick="copyTankDetails(event, ${JSON.stringify(tank).replace(/"/g, '&quot;')})"
@@ -654,11 +663,29 @@ function createResultCard(tank) {
         <span class="spec-label">Height</span>
         <span class="spec-value">${tank.height} m</span>
       </div>
+      <div class="spec-row">
+        <span class="spec-label">Net Capacity</span>
+        <span class="spec-value">${tank.capacity_display}</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Gross Capacity</span>
+        <span class="spec-value">${tank.gross_capacity_display}</span>
+      </div>
     </div>
     
-    <div class="capacity-highlight">
-      <div class="main-capacity">${tank.capacity_kl_display}</div>
-      <div class="secondary-capacity">${tank.capacity_display}</div>
+    <div class="pricing-section">
+      <div class="price-row">
+        <span class="price-label">Ideal Price</span>
+        <span class="price-value">${tank.price_display}</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">NRP</span>
+        <span class="price-value">${tank.nrp_display}</span>
+      </div>
+      <div class="price-per-kl">
+        <span class="price-label">Price per KL</span>
+        <span class="price-value">₹${tank.price_per_kl.toLocaleString('en-IN')}/KL</span>
+      </div>
     </div>
     
     ${matchInfo}
@@ -676,18 +703,20 @@ function copyTankDetails(event, tank) {
 
   const details =
 `Tank: ${tank.model}
-Type: ${tank.tank_type_name}
+Category: ${tank.category_name}
 Diameter: ${tank.diameter} m
 Height: ${tank.height} m
-Capacity: ${tank.capacity_kl_display} (${tank.capacity_display})`;
+Net Capacity: ${tank.capacity_display}
+Gross Capacity: ${tank.gross_capacity_display}
+Ideal Price: ${tank.price_display}
+NRP: ${tank.nrp_display}
+Price per KL: ₹${tank.price_per_kl}/KL`;
 
-  // ✅ Modern clipboard (works on desktop + some mobile)
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(details)
       .then(() => showNotification("Copied to clipboard", "success"))
       .catch(() => fallbackCopy(details));
   } else {
-    // ✅ Mobile / PWA fallback
     fallbackCopy(details);
   }
 }
@@ -695,12 +724,9 @@ Capacity: ${tank.capacity_kl_display} (${tank.capacity_display})`;
 function fallbackCopy(text) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
-
-  // Prevent keyboard popup on mobile
   textarea.setAttribute("readonly", "");
   textarea.style.position = "absolute";
   textarea.style.left = "-9999px";
-
   document.body.appendChild(textarea);
   textarea.select();
   textarea.setSelectionRange(0, text.length);
@@ -799,12 +825,10 @@ function clearResults() {
 // Show Notification (Toast-style)
 // ============================================
 function showNotification(message, type = 'info') {
-  // Create notification element
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
   notification.textContent = message;
   
-  // Add styles
   const style = document.createElement('style');
   style.textContent = `
     .notification {
@@ -866,7 +890,6 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // Remove after 3 seconds
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease-in';
     setTimeout(() => {

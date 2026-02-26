@@ -1,12 +1,10 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TankMate</title>
+  <title>TankMate - Smart Tank Selection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  {% load static %}
   <link rel="stylesheet" href="{% static 'calculator/css/style.css' %}">
   <link rel="icon" type="image/x-icon" href="{% static 'calculator/icons/favicon.png' %}">
   <link rel="manifest" href="{% static 'calculator/manifest.json' %}">
@@ -16,45 +14,71 @@
   <header class="app-header">
     <div class="header-wrapper">
       <div class="header-brand">
-
         <div class="brand-icon">
-          <img src="{% static 'calculator/icons/header_icon.png' %}" alt="TankMate Logo">
+          <img src="{% static 'calculator/icons/header_icon.webp' %}" alt="TankMate Logo">
         </div>
-
         <div class="brand-text">
           <h1 class="brand-title">TankMate</h1>
         </div>
-
       </div>
     </div>
   </header>
 
-
   <main class="main-content">
     
-    <!-- Step 1: Tank Type Selection (Initial View) -->
+    <!-- Step 1: Tank Category Selection (5 Cards) -->
     <section id="tankTypeSelection" class="tank-type-section">
       <div class="section-header">
         <h2 class="section-title">Find Your Tank</h2>
-        <p class="section-description">Accurate tank selection made simple</p>
+        <p class="section-description">Select a category or search across all tanks</p>
       </div>
       
       <div class="tank-cards">
         
-        <div class="tank-card" data-type="RCT" onclick="selectTankType('RCT')">
+        <!-- NEW: Universal Search Card -->
+        <div class="tank-card universal-card" data-category="ALL" onclick="selectCategory('ALL')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/rct.jpeg' %}')"></div>
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/photo-collage.webp' %}')"></div>
+            <span class="card-badge universal-badge">ALL</span>
+          </div>
+          <div class="tank-card-content">
+            <div class="card-header">
+              <h3 class="card-title" style="color: #f46767;">Universal Search</h3>
+              <div class="card-type-indicator universal-type">
+                {% comment %} <span class="type-dot"></span>
+                <span class="type-label">All Categories</span> {% endcomment %}
+              </div>
+            </div>
+            {% comment %} <p class="card-description">Search across all tank categories and compare options</p> {% endcomment %}
+            <div class="card-footer">
+              <div class="capacity-info">
+                <span class="capacity-label">Total Tanks</span>
+                <span class="capacity-value">1,165 <span class="capacity-unit">Models</span></span>
+              </div>
+              <div class="card-action universal-action">
+                <span class="action-text">Search All</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RCT Card -->
+        <div class="tank-card" data-category="RCT" onclick="selectCategory('RCT')">
+          <div class="tank-card-visual">
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/rct.webp' %}')"></div>
+            <span class="card-badge rct-badge">RCT</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
               <h3 class="card-title">Rhino Commercial Tanks</h3>
-              <div class="card-type-indicator">
-              </div>
             </div>
             <div class="card-footer">
               <div class="capacity-info">
-                <span class="capacity-label">Max Capacity</span>
-                <span class="capacity-value">10 KL - 3000 KL </span>
+                <span class="capacity-label">Capacity Range</span>
+                <span class="capacity-value">5 - 4,585 <span class="capacity-unit">KL</span></span>
               </div>
               <div class="card-action">
                 <span class="action-text">Configure</span>
@@ -66,9 +90,11 @@
           </div>
         </div>
 
-        <div class="tank-card" data-type="SST" onclick="selectTankType('SST')">
+        <!-- SST Card -->
+        <div class="tank-card" data-category="SST" onclick="selectCategory('SST')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/sst.png' %}')"></div>
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/sst.webp' %}')"></div>
+            <span class="card-badge sst-badge">SST</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
@@ -76,11 +102,10 @@
               <div class="card-type-indicator sst-type">
               </div>
             </div>
-
             <div class="card-footer">
               <div class="capacity-info">
-                <span class="capacity-label">Max Capacity</span>
-                <span class="capacity-value">25 KL - 10,000 KL </span>
+                <span class="capacity-label">Capacity Range</span>
+                <span class="capacity-value">28 - 10,969 <span class="capacity-unit">KL</span></span>
               </div>
               <div class="card-action sst-action">
                 <span class="action-text">Configure</span>
@@ -92,23 +117,51 @@
           </div>
         </div>
 
-        <div class="tank-card" data-type="FM" onclick="selectTankType('FM')">
+        <!-- SFM Card -->
+        <div class="tank-card" data-category="SFM" onclick="selectCategory('SFM')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/fm.png' %}')"></div>
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/fm.webp' %}')"></div>
+            <span class="card-badge fm-badge">SFM</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
-              <h3 class="card-title">FM Approved Tanks</h3>
-              <div class="card-type-indicator fm-type">
+              <h3 class="card-title">Factory Mutual Tanks</h3>
+              <div class="card-type-indicator fm-type">                
               </div>
             </div>
-
             <div class="card-footer">
               <div class="capacity-info">
-                <span class="capacity-label">Max Capacity</span>
-                <span class="capacity-value">37 KL - 600 KL </span>
+                <span class="capacity-label">Capacity Range</span>
+                <span class="capacity-value">53 - 602 <span class="capacity-unit">KL</span></span>
               </div>
               <div class="card-action fm-action">
+                <span class="action-text">Configure</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW: GFS Card -->
+        <div class="tank-card" data-category="GFS" onclick="selectCategory('GFS')">
+          <div class="tank-card-visual">
+            <div class="card-image" style="background-image: url('{% static 'calculator/icons/gfs.webp' %}')"></div>
+            <span class="card-badge gfs-badge">GFS</span>
+          </div>
+          <div class="tank-card-content">
+            <div class="card-header">
+              <h3 class="card-title">Glass Fused Tanks</h3>
+              <div class="card-type-indicator gfs-type">
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="capacity-info">
+                <span class="capacity-label">Capacity Range</span>
+                <span class="capacity-value">28 - 10,969 <span class="capacity-unit">KL</span></span>
+              </div>
+              <div class="card-action gfs-action">
                 <span class="action-text">Configure</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -121,15 +174,15 @@
       </div>
     </section>
 
-    <!-- Step 2: Unified Search Interface (Hidden initially) -->
+    <!-- Step 2: Search Interface (Hidden initially) -->
     <section id="searchInterface" class="search-section" style="display: none;">
       
       <div class="search-header">
-        <button class="back-button" onclick="changeTankType()">
+        <button class="back-button" onclick="changeCategory()">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M12 16L6 10L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <span>Change Tank Type</span>
+          <span>Change Category</span>
         </button>
         
         <div class="selected-tank-pill">
@@ -140,8 +193,8 @@
             </svg>
           </div>
           <div class="pill-content">
-            <span class="pill-label">Selected Tank</span>
-            <span id="selectedTankName" class="pill-value"></span>
+            <span class="pill-label">Selected Category</span>
+            <span id="selectedCategoryName" class="pill-value"></span>
           </div>
           <div class="pill-verified">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -159,6 +212,7 @@
           
           <div class="form-fields">
             
+            <!-- Capacity Input -->
             <div class="form-field">
               <label for="capacityInput" class="field-label">
                 Capacity
@@ -177,6 +231,7 @@
               </div>
             </div>
 
+            <!-- Model Input with Autocomplete -->
             <div class="form-field autocomplete-field">
               <label for="modelInput" class="field-label">
                 Tank Model
@@ -187,7 +242,7 @@
                   type="text" 
                   id="modelInput" 
                   class="field-input"
-                  placeholder="Type to search..."
+                  placeholder="Type to search models..."
                   autocomplete="off"
                   spellcheck="false"
                 >
@@ -198,12 +253,11 @@
                   </svg>
                 </span>
               </div>
-              <!-- Custom autocomplete dropdown -->
               <div id="modelDropdown" class="autocomplete-dropdown"></div>
-              <!-- Results counter -->
               <div id="modelResultsCount" class="field-hint"></div>
             </div>
 
+            <!-- Dimensions Row -->
             <div class="form-field-row">
               <div class="form-field">
                 <label for="diameterInput" class="field-label">
@@ -215,7 +269,7 @@
                     type="number" 
                     id="diameterInput" 
                     class="field-input"
-                    placeholder="e.g., 5.5"
+                    placeholder="e.g., 7.8"
                     step="any"
                     inputmode="decimal"
                     min="0"
@@ -242,6 +296,57 @@
                   <span class="input-unit">m</span>
                 </div>
               </div>
+            </div>
+
+            <!-- NEW: Price Range Filter (Only for Universal Search) -->
+            <div id="priceFilterSection" class="form-field-row" style="display: none;">
+              <div class="form-field">
+                <label for="minPriceInput" class="field-label">
+                  Min Price
+                  <span class="optional-badge">Optional</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="number" 
+                    id="minPriceInput" 
+                    class="field-input"
+                    placeholder="e.g., 100000"
+                    step="1000"
+                    min="0"
+                  >
+                  <span class="input-unit">₹</span>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="maxPriceInput" class="field-label">
+                  Max Price
+                  <span class="optional-badge">Optional</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="number" 
+                    id="maxPriceInput" 
+                    class="field-input"
+                    placeholder="e.g., 500000"
+                    step="1000"
+                    min="0"
+                  >
+                  <span class="input-unit">₹</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- NEW: Sort Options -->
+            <div class="form-field">
+              <label for="sortBySelect" class="field-label">
+                Sort Results By
+              </label>
+              <select id="sortBySelect" class="field-input">
+                <option value="capacity">Capacity (Low to High)</option>
+                <option value="price_asc">Price (Low to High)</option>
+                <option value="price_desc">Price (High to Low)</option>
+              </select>
             </div>
 
           </div>
@@ -272,6 +377,7 @@
 
   <footer class="app-footer">
     <div class="footer-content">
+      <p class="footer-text">TankMate © 2026 | Smart Tank Selection System</p>
     </div>
   </footer>
 
