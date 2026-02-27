@@ -34,10 +34,10 @@ def tank_search(request):
     
     # Base query: filter by category if specified
     if category:
-        base_query = Tank.objects.filter(category=category.upper())
+        base_query = Tank.objects.filter(category=category.upper(), is_active=True)
     else:
-        # Universal search: all categories
-        base_query = Tank.objects.all()
+        # Universal search: all categories (only active)
+        base_query = Tank.objects.filter(is_active=True)
     
     # PRIORITY 1: Model Search (Most Specific)
     if model_value and model_value.strip():
@@ -270,6 +270,11 @@ def format_tank_result(tank):
 def get_models_for_type(request):
     category = request.GET.get("category")  # Optional
     query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({
+            "models": [],
+            "count": 0
+        })
     
     # Base query
     if category:
@@ -283,7 +288,7 @@ def get_models_for_type(request):
         tanks = tanks.filter(Q(model__icontains=query))
     
     # Get unique models and sort
-    tanks = tanks.order_by('model').distinct()[:50]  # Limit to 50
+    tanks = tanks.order_by('diameter', 'height')[:50]
     
     # Format results with metadata
     models = []
@@ -333,3 +338,4 @@ def get_category_stats(request):
     }
     
     return JsonResponse({"stats": stats})
+

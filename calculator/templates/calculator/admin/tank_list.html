@@ -1,0 +1,544 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Tanks - TankMate Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f7;
+            padding-bottom: 3rem;
+        }
+        
+        .admin-header {
+            background: white;
+            border-bottom: 1px solid #e5e5ea;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .filters input, .filters select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        
+        .filters input { flex: 1; min-width: 200px; }
+        
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f5f5f7;
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6e6e73;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #f5f5f7;
+            font-size: 0.875rem;
+        }
+        
+        tr:hover {
+            background: #f9f9fb;
+        }
+        
+        .editable {
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .editable:hover {
+            background: #e5e5ea;
+        }
+        
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #34C759;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .pagination a {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #007AFF;
+        }
+        
+        .pagination a.current {
+            background: #007AFF;
+            color: white;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 9999;
+        }
+        .filter-btn {
+            padding: 0.75rem 1.25rem;
+            background: #111;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        .reset-btn {
+            padding: 0.75rem 1.25rem;
+            background: white;
+            color: #1C1C1E;
+            border: 1px solid #d1d1d6;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-btn:hover {
+            background: #f2f2f7;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            width: 420px;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+            animation: modalPop 0.2s ease;
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h3 {
+            margin-bottom: 1rem;
+        }
+
+        .modal-body label {
+            font-size: 0.75rem;
+            color: #6e6e73;
+        }
+
+        .modal-old {
+            background: #f5f5f7;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .modal-body input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #e5e5ea;
+            margin-bottom: 1rem;
+        }
+
+        .modal-preview {
+            background: #f9f9fb;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .btn-primary {
+            background: #111;
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: white;
+            border: 1px solid #d1d1d6;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .toast.show { display: block; }
+        .toast.success { border-left: 4px solid #34C759; }
+        .toast.error { border-left: 4px solid #FF3B30; }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>Manage Tanks</h1>
+        <a href="{% url 'admin_dashboard' %}" style="padding: 0.5rem 1rem; background: #007AFF; color: white; text-decoration: none; border-radius: 8px;">← Dashboard</a>
+    </header>
+
+    <div class="container">
+        <form method="GET" class="filters" id="filterForm">
+
+            <input 
+                type="text" 
+                name="search" 
+                placeholder="Search by model..." 
+                value="{{ current_search }}"
+            >
+
+            <select name="category">
+                <option value="">All Categories</option>
+                {% for code, name in categories %}
+                    <option value="{{ code }}" 
+                        {% if code == current_category %}selected{% endif %}>
+                        {{ name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="status">
+                <option value="">All Status</option>
+                <option value="active" 
+                    {% if current_status == 'active' %}selected{% endif %}>
+                    Active
+                </option>
+                <option value="inactive" 
+                    {% if current_status == 'inactive' %}selected{% endif %}>
+                    Inactive
+                </option>
+            </select>
+
+            <button type="submit" class="filter-btn">Apply</button>
+
+            <button type="button" onclick="resetFilters()" class="reset-btn">
+                Reset
+            </button>
+
+        </form>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Category</th>
+                        <th>Diameter</th>
+                        <th>Height</th>
+                        <th>Capacity</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tank in tanks %}
+                    <tr>
+                        <td><strong>{{ tank.model }}</strong></td>
+                        <td>{{ tank.get_category_display }}</td>
+                        <td class="editable" data-tank-id="{{ tank.id }}" data-field="diameter">{{ tank.diameter }}m</td>
+                        <td class="editable" data-tank-id="{{ tank.id }}" data-field="height">{{ tank.height }}m</td>
+                        <td class="editable" data-tank-id="{{ tank.id }}" data-field="net_capacity">{{ tank.net_capacity }} KL</td>
+                        <td class="editable" data-tank-id="{{ tank.id }}" data-field="ideal_price">₹{{ tank.ideal_price }}</td>
+                        <td>
+                            <div class="toggle-switch {% if tank.is_active %}active{% endif %}" 
+                                 data-tank-id="{{ tank.id }}"
+                                 onclick="toggleTank({{ tank.id }}, this)">
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            {% if tanks.has_previous %}
+            <a href="?page=1&search={{ current_search }}&category={{ current_category }}&status={{ current_status }}">First</a>
+
+            <a href="?page={{ tanks.previous_page_number }}
+            &search={{ current_search }}
+            &category={{ current_category }}
+            &status={{ current_status }}">
+            Prev</a>
+            {% endif %}
+
+            <span class="current">{{ tanks.number }} / {{ tanks.paginator.num_pages }}</span>
+
+            {% if tanks.has_next %}
+            <a href="?page={{ tanks.next_page_number }}
+            &search={{ current_search }}
+            &category={{ current_category }}
+            &status={{ current_status }}">
+            Next</a>
+
+            <a href="?page={{ tanks.paginator.num_pages }}
+            &search={{ current_search }}
+            &category={{ current_category }}
+            &status={{ current_status }}">
+            Last</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Edit <span id="modalFieldName"></span></h3>
+
+            <div class="modal-body">
+                <label>Current Value</label>
+                <div class="modal-old" id="modalOldValue"></div>
+
+                <label>New Value</label>
+                <input type="text" id="modalNewValue">
+
+                <div class="modal-preview">
+                    <strong>Preview:</strong>
+                    <span id="modalPreview"></span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="confirmUpdate()">Confirm Changes</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script>
+        function getCookie(name) {
+            let value = `; ${document.cookie}`;
+            let parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function toggleTank(tankId, element) {
+            fetch("{% url 'admin_tank_toggle' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `tank_id=${tankId}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    element.classList.toggle('active');
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.error, 'error');
+                }
+            });
+        }
+
+        function resetFilters() {
+            window.location.href = "{% url 'admin_tank_list' %}";
+        }
+
+        document.querySelector('input[name="search"]').addEventListener('keydown', function(e){
+            if(e.key === 'Enter'){
+                document.getElementById('filterForm').submit();
+            }
+        });
+
+        document.querySelectorAll('#filterForm select').forEach(select => {
+            select.addEventListener('change', function() {
+                document.getElementById('filterForm').submit();
+            });
+        });
+
+        let currentTankId = null;
+        let currentField = null;
+        let currentElement = null;
+
+        document.querySelectorAll('.editable').forEach(el => {
+            el.addEventListener('click', function() {
+
+                currentTankId = this.dataset.tankId;
+                currentField = this.dataset.field;
+                currentElement = this;
+
+                const cleanValue = this.textContent.replace(/[₹mkl\s]/gi, '');
+
+                document.getElementById('modalFieldName').textContent = currentField;
+                document.getElementById('modalOldValue').textContent = cleanValue;
+                document.getElementById('modalNewValue').value = cleanValue;
+                document.getElementById('modalPreview').textContent = cleanValue;
+
+                document.getElementById('editModal').classList.add('show');
+            });
+        });
+
+        document.getElementById('modalNewValue').addEventListener('input', function() {
+            document.getElementById('modalPreview').textContent =
+                document.getElementById('modalOldValue').textContent + 
+                " → " + 
+                this.value;
+        });
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        function confirmUpdate() {
+
+            const newValue = document.getElementById('modalNewValue').value;
+
+            if (!newValue) return;
+
+            fetch("{% url 'admin_tank_update' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `tank_id=${currentTankId}&field=${currentField}&value=${newValue}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentElement.textContent = newValue;
+                    closeModal();
+                    showToast("Updated successfully", "success");
+                } else {
+                    showToast(data.error, "error");
+                }
+            });
+        }
+
+        function updateField(tankId, field, value, element) {
+            fetch("{% url 'admin_tank_update' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `tank_id=${tankId}&field=${field}&value=${value}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Refresh to show updated value
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.error, 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

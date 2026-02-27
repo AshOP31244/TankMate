@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{% static 'calculator/css/style.css' %}">
   <link rel="icon" type="image/x-icon" href="{% static 'calculator/icons/favicon.png' %}">
   <link rel="manifest" href="{% static 'calculator/manifest.json' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
 </head>
 <body>
 
@@ -19,6 +20,35 @@
         </div>
         <div class="brand-text">
           <h1 class="brand-title">TankMate</h1>
+        </div>
+        <!-- Collections Dropdown & Cart Badge -->
+        <div class="header-actions">
+          <!-- Collections Dropdown -->
+          <div class="collections-dropdown">
+            <button class="collections-toggle" onclick="toggleCollectionsDropdown()">
+              <i class="ri-folder-3-line"></i>
+              <span id="activeCollectionName">My Selection</span>
+              <i class="ri-arrow-down-s-line"></i>
+            </button>
+            
+            <div id="collectionsMenu" class="collections-menu" style="display: none;">
+              <div class="collections-list" id="collectionsList">
+                <!-- Populated by JavaScript -->
+              </div>
+              <div class="collections-menu-actions">
+                <button onclick="createNewCollection()" class="collection-action-btn">
+                  <i class="ri-add-line"></i>
+                  New Collection
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Cart Badge -->
+          <button class="cart-badge" onclick="toggleCartSidebar()">
+            <i class="ri-shopping-cart-2-line"></i>
+            <span id="cartCount" class="cart-count">0</span>
+          </button>
         </div>
       </div>
     </div>
@@ -381,6 +411,85 @@
     </div>
   </footer>
 
+  <!-- Cart Sidebar -->
+  <div id="cartSidebar" class="cart-sidebar">
+    <div class="cart-sidebar-overlay" onclick="toggleCartSidebar()"></div>
+    
+    <div class="cart-sidebar-content">
+      <!-- Header -->
+      <div class="cart-header">
+        <div class="cart-header-title">
+          <i class="ri-shopping-cart-2-line"></i>
+          <h3 id="cartCollectionName">My Selection</h3>
+        </div>
+        <button onclick="toggleCartSidebar()" class="cart-close-btn">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      
+      <!-- Stats -->
+      <div class="cart-stats" id="cartStats">
+        <div class="cart-stat">
+          <span class="cart-stat-label">Tanks</span>
+          <span class="cart-stat-value" id="cartStatTanks">0</span>
+        </div>
+        <div class="cart-stat">
+          <span class="cart-stat-label">Capacity</span>
+          <span class="cart-stat-value" id="cartStatCapacity">0 KL</span>
+        </div>
+        <div class="cart-stat">
+          <span class="cart-stat-label">Total</span>
+          <span class="cart-stat-value" id="cartStatPrice">₹0</span>
+        </div>
+      </div>
+      
+      <!-- Tanks List -->
+      <div class="cart-items" id="cartItems">
+        <!-- Populated by JavaScript -->
+      </div>
+      
+      <!-- Actions -->
+      <div class="cart-actions">
+        <button onclick="copyCollection('text')" class="cart-action-btn primary">
+          <i class="ri-file-copy-line"></i>
+          Copy as Text
+        </button>
+        <button onclick="copyCollection('json')" class="cart-action-btn secondary">
+          <i class="ri-code-s-slash-line"></i>
+          Export TO NEXUS
+        </button>
+        <button onclick="shareCollection()" class="cart-action-btn secondary">
+          <i class="ri-share-line"></i>
+          Share
+        </button>
+        <button onclick="clearActiveCollection()" class="cart-action-btn danger">
+          <i class="ri-delete-bin-line"></i>
+          Clear All
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="collectionModal" class="custom-modal">
+    <div class="modal-content">
+      <h3>Create New Collection</h3>
+      <input type="text" id="collectionNameInput" placeholder="Collection name" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCollectionModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmCreateCollection()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="custom-modal">
+    <div class="modal-content">
+      <h3>Clear Collection?</h3>
+      <p>This will remove all tanks.</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmClearCollection()">Clear</button>
+      </div>
+    </div>
+  </div>
   <script src="{% static 'calculator/js/app.js' %}"></script>
 </body>
 </html>

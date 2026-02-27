@@ -49,6 +49,263 @@ let autocompleteTimeout = null;
 let currentSuggestions = [];
 let selectedSuggestionIndex = -1;
 
+
+// ============================================
+// Collections & Cart State Management
+// ============================================
+
+class TankCollection {
+  constructor() {
+    this.collections = this.loadCollections();
+    this.activeCollectionId = this.loadActiveCollection();
+  }
+
+  loadCollections() {
+    const stored = localStorage.getItem('tankmate_collections');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    // Create default collection
+    const defaultCollection = {
+      id: this.generateId(),
+      name: 'My Selection',
+      tanks: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    return { [defaultCollection.id]: defaultCollection };
+  }
+
+  loadActiveCollection() {
+    const stored = localStorage.getItem('tankmate_active_collection');
+    if (stored && this.collections[stored]) {
+      return stored;
+    }
+    return Object.keys(this.collections)[0];
+  }
+
+  saveCollections() {
+    localStorage.setItem('tankmate_collections', JSON.stringify(this.collections));
+  }
+
+  saveActiveCollection() {
+    localStorage.setItem('tankmate_active_collection', this.activeCollectionId);
+  }
+
+  generateId() {
+    return 'col_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  getActiveCollection() {
+    return this.collections[this.activeCollectionId];
+  }
+
+  getAllCollections() {
+    return Object.values(this.collections).sort((a, b) => 
+      new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+  }
+
+  createCollection(name) {
+    const newCollection = {
+      id: this.generateId(),
+      name: name || `Collection ${Object.keys(this.collections).length + 1}`,
+      tanks: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.collections[newCollection.id] = newCollection;
+    this.activeCollectionId = newCollection.id;
+    this.saveCollections();
+    this.saveActiveCollection();
+    return newCollection;
+  }
+
+  switchCollection(collectionId) {
+    if (this.collections[collectionId]) {
+      this.activeCollectionId = collectionId;
+      this.saveActiveCollection();
+      return true;
+    }
+    return false;
+  }
+
+  renameCollection(collectionId, newName) {
+    if (this.collections[collectionId]) {
+      this.collections[collectionId].name = newName;
+      this.collections[collectionId].updatedAt = new Date().toISOString();
+      this.saveCollections();
+      return true;
+    }
+    return false;
+  }
+
+  deleteCollection(collectionId) {
+    if (Object.keys(this.collections).length <= 1) {
+      showNotification('Cannot delete the last collection', 'error');
+      return false;
+    }
+    delete this.collections[collectionId];
+    if (this.activeCollectionId === collectionId) {
+      this.activeCollectionId = Object.keys(this.collections)[0];
+      this.saveActiveCollection();
+    }
+    this.saveCollections();
+    return true;
+  }
+
+  duplicateCollection(collectionId) {
+    const original = this.collections[collectionId];
+    if (!original) return null;
+    
+    const duplicate = {
+      ...original,
+      id: this.generateId(),
+      name: `${original.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.collections[duplicate.id] = duplicate;
+    this.saveCollections();
+    return duplicate;
+  }
+
+  addTankToCollection(tank, collectionId = null) {
+    const targetId = collectionId || this.activeCollectionId;
+    const collection = this.collections[targetId];
+    
+    if (!collection) return false;
+    
+    // Check if tank already exists
+    // const exists = collection.tanks.some(t => t.model === tank.model);
+    // if (exists) {
+    //   showNotification('Tank already in collection', 'info');
+    //   return false;
+    // }
+    
+    // Check limit
+    if (collection.tanks.length >= 30) {
+      showNotification('Collection limit reached (30 tanks)', 'error');
+      return false;
+    }
+    
+    collection.tanks.push({
+      ...tank,
+      id: Date.now() + "_" + Math.random(),
+      addedAt: new Date().toISOString()
+    });
+    collection.updatedAt = new Date().toISOString();
+    this.saveCollections();
+    return true;
+  }
+
+  removeTankFromCollection(tankModel, collectionId = null) {
+    const targetId = collectionId || this.activeCollectionId;
+    const collection = this.collections[targetId];
+    
+    if (!collection) return false;
+    
+    collection.tanks = collection.tanks.filter(t => t.id !== tankModel);
+    collection.updatedAt = new Date().toISOString();
+    this.saveCollections();
+    return true;
+  }
+
+  getCollectionStats(collectionId = null) {
+    const collection = collectionId ? 
+      this.collections[collectionId] : 
+      this.getActiveCollection();
+    
+    if (!collection) return null;
+    
+    const totalCapacity = collection.tanks.reduce((sum, tank) => 
+      sum + (tank.net_capacity || 0), 0
+    );
+    
+    const totalPrice = collection.tanks.reduce((sum, tank) => 
+      sum + (tank.ideal_price || 0), 0
+    );
+    
+    return {
+      count: collection.tanks.length,
+      totalCapacity: totalCapacity.toFixed(2),
+      totalPrice: totalPrice.toFixed(0)
+    };
+  }
+
+  exportCollection(collectionId = null, format = 'json') {
+    const collection = collectionId ? 
+      this.collections[collectionId] : 
+      this.getActiveCollection();
+    
+    if (!collection) return null;
+    
+    const stats = this.getCollectionStats(collectionId);
+    
+    if (format === 'json') {
+      return {
+        collection_name: collection.name,
+        tanks: collection.tanks.map(tank => ({
+          model: tank.model,
+          category: tank.category,
+          category_name: tank.category_name,
+          diameter: tank.diameter,
+          height: tank.height,
+          net_capacity: tank.net_capacity,
+          gross_capacity: tank.gross_capacity,
+          ideal_price: tank.ideal_price,
+          nrp: tank.nrp,
+          price_per_kl: tank.price_per_kl
+        })),
+        statistics: stats,
+        exported_at: new Date().toISOString(),
+        source: 'tankmate',
+        version: '1.0'
+      };
+    }
+    
+    if (format === 'text') {
+      return this.formatCollectionAsText(collection, stats);
+    }
+    
+    return null;
+  }
+
+  formatCollectionAsText(collection, stats) {
+    let output = `TANK SELECTION: ${collection.name}\n`;
+    output += `Generated: ${new Date().toLocaleString('en-IN')}\n`;
+    output += `${'━'.repeat(60)}\n\n`;
+    
+    collection.tanks.forEach((tank, index) => {
+      output += `[${index + 1}] ${tank.model}\n`;
+      output += `${'━'.repeat(60)}\n`;
+      output += `Category: ${tank.category_name} (${tank.category})\n`;
+      output += `Dimensions: Ø${tank.diameter}m × ${tank.height}m\n`;
+      output += `Net Capacity: ${tank.net_capacity.toFixed(2)} KL\n`;
+      output += `Gross Capacity: ${tank.gross_capacity.toFixed(2)} KL\n`;
+      output += `Ideal Price: ₹${tank.ideal_price.toLocaleString('en-IN')}\n`;
+      output += `NRP: ₹${tank.nrp.toLocaleString('en-IN')}\n`;
+      output += `Price/KL: ₹${tank.price_per_kl.toLocaleString('en-IN')}/KL\n\n`;
+    });
+    
+    output += `${'━'.repeat(60)}\n`;
+    output += `SUMMARY\n`;
+    output += `${'━'.repeat(60)}\n`;
+    output += `Total Tanks: ${stats.count}\n`;
+    output += `Combined Capacity: ${stats.totalCapacity} KL\n`;
+    output += `Total Investment: ₹${parseInt(stats.totalPrice).toLocaleString('en-IN')}\n`;
+    output += `${'━'.repeat(60)}\n\n`;
+    output += `Generated by TankMate\n`;
+    output += `https://tankmate.pythonanywhere.com\n`;
+    
+    return output;
+  }
+}
+
+// Initialize collections manager
+const collectionsManager = new TankCollection();
+
+
 // ============================================
 // Initialize App
 // ============================================
@@ -645,13 +902,14 @@ function createResultCard(tank) {
     <div class="card-header">
       <div class="model-name">
         ${tank.model}
-        
       </div>
-      <button class="copy-icon-btn"
-        onclick="copyTankDetails(event, ${JSON.stringify(tank).replace(/"/g, '&quot;')})"
-        title="Copy tank details">
-        Copy
-      </button>
+      <div class="card-footer-actions">
+
+        <button class="copy-btn"
+          onclick="copyTankDetails(event, ${JSON.stringify(tank).replace(/"/g, '&quot;')})">
+          <i class="ri-file-copy-line"></i>
+        </button>
+      </div>
     </div>
     
     <div class="specs-grid">
@@ -689,6 +947,17 @@ function createResultCard(tank) {
     </div>
     
     ${matchInfo}
+    <div class="proposal-section">
+      <button 
+        class="proposal-btn"
+        data-model="${tank.model}"
+        onclick="addTankToCart(event, ${JSON.stringify(tank).replace(/"/g, '&quot;')}, this)">
+        
+        <span class="btn-text">Add to Proposal</span>
+        <span class="btn-count">0</span>
+      </button>
+
+    </div>
   `;
   
   return card;
@@ -897,6 +1166,318 @@ function showNotification(message, type = 'info') {
     }, 300);
   }, 3000);
 }
+
+// ============================================
+// Collections Management Functions
+// ============================================
+
+function toggleCollectionsDropdown() {
+  const menu = document.getElementById('collectionsMenu');
+  const isVisible = menu.style.display === 'block';
+  
+  if (isVisible) {
+    menu.style.display = 'none';
+  } else {
+    updateCollectionsList();
+    menu.style.display = 'block';
+  }
+}
+
+function updateCollectionsList() {
+  const listEl = document.getElementById('collectionsList');
+  const collections = collectionsManager.getAllCollections();
+  const activeId = collectionsManager.activeCollectionId;
+  
+  listEl.innerHTML = collections.map(col => `
+    <div class="collection-item ${col.id === activeId ? 'active' : ''}" 
+         onclick="switchToCollection('${col.id}')">
+      <div class="collection-item-info">
+        <i class="ri-folder-3-${col.id === activeId ? 'fill' : 'line'}"></i>
+        <span class="collection-name">${col.name}</span>
+        <span class="collection-count">${col.tanks.length}</span>
+      </div>
+      ${col.id === activeId ? '' : `
+        <div class="collection-item-actions" onclick="event.stopPropagation()">
+          <button onclick="renameCollectionPrompt('${col.id}')" title="Rename">
+            <i class="ri-edit-line"></i>
+          </button>
+          <button onclick="duplicateCollectionAction('${col.id}')" title="Duplicate">
+            <i class="ri-file-copy-line"></i>
+          </button>
+          <button onclick="deleteCollectionAction('${col.id}')" title="Delete">
+            <i class="ri-delete-bin-line"></i>
+          </button>
+        </div>
+      `}
+    </div>
+  `).join('');
+}
+
+function switchToCollection(collectionId) {
+  collectionsManager.switchCollection(collectionId);
+  document.getElementById('activeCollectionName').textContent = 
+    collectionsManager.getActiveCollection().name;
+  document.getElementById('collectionsMenu').style.display = 'none';
+  updateCartUI();
+  showNotification('Switched collection', 'success');
+}
+
+function createNewCollection() {
+  document.getElementById("collectionModal").classList.add("show");
+  document.getElementById("collectionsMenu").style.display = "none";
+}
+
+function closeCollectionModal() {
+  document.getElementById("collectionModal").classList.remove("show");
+}
+
+function confirmCreateCollection() {
+  const name = document.getElementById("collectionNameInput").value.trim();
+  if (!name) return;
+
+  if (window.tempRenameId) {
+    collectionsManager.renameCollection(window.tempRenameId, name);
+    window.tempRenameId = null;
+    showNotification("Collection renamed", "success");
+  } else {
+    collectionsManager.createCollection(name);
+    showNotification("Collection created", "success");
+  }
+
+  updateCollectionsList();
+  updateCartUI();
+  closeCollectionModal();
+}
+
+function renameCollectionPrompt(collectionId) {
+  const collection = collectionsManager.collections[collectionId];
+
+  document.getElementById("collectionNameInput").value = collection.name;
+  document.getElementById("collectionModal").classList.add("show");
+
+  window.tempRenameId = collectionId;
+}
+
+function duplicateCollectionAction(collectionId) {
+  const duplicate = collectionsManager.duplicateCollection(collectionId);
+  if (duplicate) {
+    updateCollectionsList();
+    showNotification('Collection duplicated', 'success');
+  }
+}
+
+function deleteCollectionAction(collectionId) {
+  window.tempDeleteId = collectionId;
+  document.getElementById("confirmModal").classList.add("show");
+}
+
+// ============================================
+// Cart/Sidebar Functions
+// ============================================
+
+function toggleCartSidebar() {
+  const sidebar = document.getElementById('cartSidebar');
+  const isOpen = sidebar.classList.contains('open');
+  
+  if (isOpen) {
+    sidebar.classList.remove('open');
+  } else {
+    updateCartUI();
+    sidebar.classList.add('open');
+  }
+}
+
+function addTankToCart(event, tank, buttonElement) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const added = collectionsManager.addTankToCollection(tank);
+
+  if (added) {
+    updateCartUI();
+
+    // Count how many times this model exists
+    const collection = collectionsManager.getActiveCollection();
+    const count = collection.tanks.filter(t => t.model === tank.model).length;
+
+    const countElement = buttonElement.querySelector(".btn-count");
+    if (countElement) {
+      countElement.textContent = count;
+    }
+
+    buttonElement.classList.add("added");
+    buttonElement.querySelector(".btn-text").textContent = "Added";
+
+    showNotification(`${tank.model} added`, "success");
+  }
+}
+
+function removeTankFromCart(tankModel) {
+  if (collectionsManager.removeTankFromCollection(tankModel)) {
+    updateCartUI();
+    showNotification('Tank removed', 'success');
+  }
+}
+
+function updateCartUI() {
+  const collection = collectionsManager.getActiveCollection();
+  const stats = collectionsManager.getCollectionStats();
+  
+  // Update badge count
+  document.getElementById('cartCount').textContent = collection.tanks.length;
+  
+  // Update sidebar title
+  document.getElementById('cartCollectionName').textContent = collection.name;
+  
+  // Update stats
+  if (stats) {
+    document.getElementById('cartStatTanks').textContent = stats.count;
+    document.getElementById('cartStatCapacity').textContent = `${stats.totalCapacity} KL`;
+    document.getElementById('cartStatPrice').textContent = 
+      `₹${parseInt(stats.totalPrice).toLocaleString('en-IN')}`;
+  }
+  
+  // Update items list
+  const itemsContainer = document.getElementById('cartItems');
+  
+  if (collection.tanks.length === 0) {
+    itemsContainer.innerHTML = `
+      <div class="cart-empty">
+        <i class="ri-shopping-cart-line"></i>
+        <p>No tanks in this collection</p>
+        <small>Search and add tanks to get started</small>
+      </div>
+    `;
+  } else {
+    itemsContainer.innerHTML = collection.tanks.map((tank, index) => `
+      <div class="cart-item">
+        <div class="cart-item-number">${index + 1}</div>
+        <div class="cart-item-details">
+          <div class="cart-item-model">${tank.model}</div>
+          <div class="cart-item-specs">
+            <span class="cart-item-spec">
+              <i class="ri-dashboard-line"></i>
+              ${tank.net_capacity.toFixed(2)} KL
+            </span>
+            <span class="cart-item-spec">
+              <i class="ri-price-tag-3-line"></i>
+              ₹${tank.ideal_price.toLocaleString('en-IN')}
+            </span>
+          </div>
+          <div class="cart-item-category-badge category-badge-${tank.category.toLowerCase()}">
+            ${tank.category}
+          </div>
+        </div>
+        <button onclick="removeTankFromCart('${tank.id}')" 
+                class="cart-item-remove"
+                title="Remove">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+    `).join('');
+  }
+}
+
+function clearActiveCollection() {
+  document.getElementById("confirmModal").classList.add("show");
+}
+
+function closeConfirmModal() {
+  document.getElementById("confirmModal").classList.remove("show");
+}
+
+function confirmClearCollection() {
+  if (window.tempDeleteId) {
+    collectionsManager.deleteCollection(window.tempDeleteId);
+    window.tempDeleteId = null;
+    showNotification("Collection deleted", "success");
+  } else {
+    const collection = collectionsManager.getActiveCollection();
+    collection.tanks = [];
+    collectionsManager.saveCollections();
+    showNotification("Collection cleared", "success");
+  }
+
+  updateCollectionsList();
+  updateCartUI();
+  closeConfirmModal();
+}
+
+function copyCollection(format = 'text') {
+  const exported = collectionsManager.exportCollection(null, format);
+  
+  if (!exported) {
+    showNotification('Nothing to export', 'error');
+    return;
+  }
+  
+  const textToCopy = format === 'json' ? 
+    JSON.stringify(exported, null, 2) : 
+    exported;
+  
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => {
+        showNotification(
+          format === 'json' ? 'JSON copied to clipboard' : 'Collection copied to clipboard', 
+          'success'
+        );
+      })
+      .catch(() => fallbackCopy(textToCopy));
+  } else {
+    fallbackCopy(textToCopy);
+  }
+}
+
+function shareCollection() {
+  const collection = collectionsManager.getActiveCollection();
+  
+  if (collection.tanks.length === 0) {
+    showNotification('Add tanks to collection first', 'error');
+    return;
+  }
+  
+  // Generate shareable data
+  const shareData = collectionsManager.exportCollection(null, 'json');
+  const shareText = `TankMate Collection: ${collection.name}\n${collection.tanks.length} tanks | ${collectionsManager.getCollectionStats().totalCapacity} KL\n\nImport this collection: `;
+  
+  // Option 1: Copy JSON for manual import
+  const shareJSON = JSON.stringify(shareData);
+  
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(shareJSON)
+      .then(() => {
+        showNotification('Collection data copied! Share this with others to import.', 'success');
+      });
+  }
+  
+  // Option 2: WhatsApp share (if on mobile)
+  if (navigator.share) {
+    navigator.share({
+      title: `TankMate: ${collection.name}`,
+      text: shareText + '\n\n' + shareJSON
+    }).catch(() => {
+      showNotification('Collection data copied to clipboard', 'success');
+    });
+  }
+}
+
+// Initialize cart UI on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateCartUI();
+  
+  // Close collections dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('collectionsMenu');
+    const toggle = document.querySelector('.collections-toggle');
+    
+    if (dropdown && toggle && 
+        !dropdown.contains(e.target) && 
+        !toggle.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+});
 
 // ============================================
 // Service Worker Registration (PWA Support)

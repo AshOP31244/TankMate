@@ -1,0 +1,537 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bulk Price Update - TankMate Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7}
+
+header{
+background:white;
+padding:1.2rem 2rem;
+border-bottom:1px solid #e5e5ea;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+header h1{font-size:1.4rem;font-weight:600}
+
+.dashboard-link{
+padding:.6rem 1rem;
+background:#111;
+color:white;
+text-decoration:none;
+border-radius:10px;
+font-size:.85rem;
+transition:.2s ease;
+}
+
+.dashboard-link:hover{background:#000;transform:translateY(-1px)}
+
+.container{max-width:1000px;margin:3rem auto;padding:0 1rem}
+
+.upload-card{
+background:white;
+border-radius:24px;
+padding:2.5rem;
+box-shadow:0 20px 40px rgba(0,0,0,.08);
+}
+
+.upload-card h2{margin-bottom:.5rem}
+
+.drop-zone{
+border:2px dashed #d1d1d6;
+border-radius:20px;
+padding:2.5rem;
+text-align:center;
+cursor:pointer;
+transition:.2s ease;
+margin:1.5rem 0;
+}
+
+.drop-zone:hover{border-color:#111;background:#fafafa}
+
+.drop-zone i{font-size:2rem;color:#007AFF;margin-bottom:.5rem}
+
+.file-name{
+margin-top:.6rem;
+font-size:.85rem;
+color:#6e6e73;
+font-weight:500;
+}
+
+.action-btn{
+padding:.9rem 1.8rem;
+background:#111;
+color:white;
+border:none;
+border-radius:14px;
+font-weight:600;
+cursor:pointer;
+transition:.2s ease;
+font-size:.9rem;
+}
+
+.action-btn:hover:not(:disabled){background:#000;transform:translateY(-1px)}
+.action-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.modal-overlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+padding:1rem;
+}
+
+.modal-overlay.show{display:flex}
+
+.modal{
+background:white;
+width:100%;
+max-width:900px;
+max-height:85vh;
+overflow:auto;
+padding:2rem;
+border-radius:24px;
+box-shadow:0 40px 80px rgba(0,0,0,.2);
+animation:pop .2s ease;
+}
+
+@keyframes pop{
+from{transform:scale(.95);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+
+.modal h3{
+margin-bottom:1rem;
+font-size:1.3rem;
+}
+
+.summary-box{
+background:#f5f5f7;
+padding:1rem 1.5rem;
+border-radius:12px;
+margin-bottom:1.5rem;
+display:flex;
+gap:2rem;
+}
+
+.summary-item{
+display:flex;
+flex-direction:column;
+}
+
+.summary-label{
+font-size:.7rem;
+text-transform:uppercase;
+letter-spacing:.05em;
+color:#6e6e73;
+margin-bottom:.25rem;
+}
+
+.summary-value{
+font-size:1.4rem;
+font-weight:700;
+color:#111;
+}
+
+.summary-value.success{color:#34C759}
+.summary-value.warning{color:#FF9500}
+
+.table-wrapper{
+max-height:400px;
+overflow-y:auto;
+border-radius:12px;
+border:1px solid #e5e5ea;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:.85rem;
+}
+
+thead{
+position:sticky;
+top:0;
+z-index:10;
+}
+
+th{
+background:#f5f5f7;
+text-align:left;
+padding:.75rem 1rem;
+font-size:.7rem;
+text-transform:uppercase;
+letter-spacing:.05em;
+border-bottom:2px solid #e5e5ea;
+}
+
+td{
+padding:.75rem 1rem;
+border-bottom:1px solid #f2f2f7;
+}
+
+tbody tr:hover{
+background:#fafafa;
+}
+
+.old-price{
+color:#FF3B30;
+font-weight:600;
+font-size:.9rem;
+}
+
+.new-price-cell input{
+width:100%;
+padding:.5rem .75rem;
+border:1px solid #d1d1d6;
+border-radius:8px;
+font-size:.85rem;
+font-weight:600;
+}
+
+.new-price-cell input:focus{
+outline:none;
+border-color:#007AFF;
+box-shadow:0 0 0 3px rgba(0,122,255,.1);
+}
+
+.diff-up{background:#e8f8f0}
+.diff-down{background:#fff2f2}
+
+.price-change{
+font-size:.75rem;
+color:#6e6e73;
+font-weight:500;
+}
+
+.price-change.increase{color:#34C759}
+.price-change.decrease{color:#FF3B30}
+
+.modal-actions{
+display:flex;
+justify-content:flex-end;
+gap:1rem;
+margin-top:1.5rem;
+padding-top:1.5rem;
+border-top:1px solid #e5e5ea;
+}
+
+.btn-secondary{
+background:white;
+border:1px solid #d1d1d6;
+padding:.7rem 1.2rem;
+border-radius:10px;
+cursor:pointer;
+font-weight:600;
+transition:.2s ease;
+}
+
+.btn-secondary:hover{
+background:#f5f5f7;
+}
+
+.btn-primary{
+background:#111;
+color:white;
+border:none;
+padding:.7rem 1.5rem;
+border-radius:10px;
+cursor:pointer;
+font-weight:600;
+transition:.2s ease;
+}
+
+.btn-primary:hover{
+background:#000;
+transform:translateY(-1px);
+}
+
+.toast{
+position:fixed;
+top:20px;
+right:20px;
+background:white;
+padding:1rem 1.5rem;
+border-radius:14px;
+box-shadow:0 15px 35px rgba(0,0,0,.2);
+display:none;
+z-index:10000;
+animation:slideIn .3s ease;
+}
+
+@keyframes slideIn{
+from{transform:translateX(100%);opacity:0}
+to{transform:translateX(0);opacity:1}
+}
+
+.toast.show{display:block}
+.toast.success{border-left:4px solid #34C759}
+.toast.error{border-left:4px solid #FF3B30}
+
+.skipped-section{
+margin-top:1.5rem;
+padding:1rem;
+background:#fff9e6;
+border-radius:12px;
+border-left:4px solid #FF9500;
+}
+
+.skipped-section h4{
+font-size:.9rem;
+margin-bottom:.5rem;
+color:#78350F;
+}
+
+.skipped-list{
+font-size:.8rem;
+color:#92400E;
+max-height:100px;
+overflow-y:auto;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>💰 Bulk Price Update</h1>
+<a href="{% url 'admin_dashboard' %}" class="dashboard-link">← Dashboard</a>
+</header>
+
+<div class="container">
+<div class="upload-card">
+<h2>Upload Price CSV</h2>
+<p style="font-size:.85rem;color:#6e6e73;margin-bottom:1rem">
+Required columns: <code style="background:#f5f5f7;padding:2px 6px;border-radius:4px">model_number</code>, 
+<code style="background:#f5f5f7;padding:2px 6px;border-radius:4px">new_price</code>
+</p>
+
+<div class="drop-zone" onclick="document.getElementById('priceFile').click()">
+<i class="ri-upload-cloud-2-line"></i>
+<div style="font-weight:600;margin-top:.5rem">Click to upload CSV</div>
+<div class="file-name" id="fileName"></div>
+</div>
+
+<input type="file" id="priceFile" accept=".csv" hidden>
+
+<button class="action-btn" onclick="previewBulk()" id="previewBtn" disabled>
+<i class="ri-eye-line" style="margin-right:.5rem"></i>
+Preview Changes
+</button>
+</div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="modal-overlay">
+<div class="modal">
+<h3>📋 Review Price Changes</h3>
+
+<div class="summary-box">
+<div class="summary-item">
+<span class="summary-label">To Update</span>
+<span class="summary-value success" id="summaryUpdate">0</span>
+</div>
+<div class="summary-item">
+<span class="summary-label">Skipped</span>
+<span class="summary-value warning" id="summarySkipped">0</span>
+</div>
+</div>
+
+<div class="table-wrapper">
+<table id="previewTable"></table>
+</div>
+
+<div id="skippedSection" class="skipped-section" style="display:none">
+<h4>⚠️ Skipped Items</h4>
+<div id="skippedList" class="skipped-list"></div>
+</div>
+
+<div class="modal-actions">
+<button class="btn-secondary" onclick="closeModal()">Cancel</button>
+<button class="btn-primary" onclick="confirmBulk()">
+<i class="ri-check-line" style="margin-right:.5rem"></i>
+Apply Changes
+</button>
+</div>
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let parsedChanges = []
+
+const fileInput = document.getElementById('priceFile')
+const previewBtn = document.getElementById('previewBtn')
+const fileName = document.getElementById('fileName')
+
+fileInput.addEventListener('change', function(){
+if(this.files.length > 0){
+fileName.textContent = this.files[0].name
+fileName.style.color = '#34C759'
+previewBtn.disabled = false
+}
+})
+
+function previewBulk(){
+const file = fileInput.files[0]
+if(!file) return
+
+const formData = new FormData()
+formData.append('price_csv', file)
+
+// Show loading state
+previewBtn.disabled = true
+previewBtn.textContent = 'Processing...'
+
+fetch("{% url 'admin_bulk_price_update' %}", {
+method: 'POST',
+headers: {'X-CSRFToken': getCookie('csrftoken')},
+body: formData
+})
+.then(res => res.json())
+.then(data => {
+previewBtn.disabled = false
+previewBtn.innerHTML = '<i class="ri-eye-line" style="margin-right:.5rem"></i>Preview Changes'
+
+if(data.success){
+parsedChanges = data.changes
+renderPreview(data)
+document.getElementById('previewModal').classList.add('show')
+} else {
+showToast(data.error, 'error')
+}
+})
+.catch(err => {
+previewBtn.disabled = false
+previewBtn.innerHTML = '<i class="ri-eye-line" style="margin-right:.5rem"></i>Preview Changes'
+showToast('Failed to process file', 'error')
+})
+}
+
+function renderPreview(data){
+const changes = data.changes
+const skipped = data.skipped
+
+// Update summary
+document.getElementById('summaryUpdate').textContent = data.summary.to_update
+document.getElementById('summarySkipped').textContent = data.summary.skipped
+
+// Render table
+const table = document.getElementById('previewTable')
+table.innerHTML = `
+<thead>
+<tr>
+<th>Model</th>
+<th>Old Price</th>
+<th>New Price (Editable)</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+${changes.map((c, i) => {
+const diff = c.new_price - c.old_price
+const diffPercent = ((diff / c.old_price) * 100).toFixed(1)
+const isIncrease = diff > 0
+return `
+<tr class="${isIncrease ? 'diff-up' : 'diff-down'}">
+<td style="font-weight:600">${c.model}</td>
+<td class="old-price">₹${c.old_price.toLocaleString('en-IN')}</td>
+<td class="new-price-cell">
+<input type="number" value="${c.new_price}" onchange="updateValue(${i}, this.value)">
+</td>
+<td>
+<span class="price-change ${isIncrease ? 'increase' : 'decrease'}">
+${isIncrease ? '+' : ''}${diff.toLocaleString('en-IN')} (${isIncrease ? '+' : ''}${diffPercent}%)
+</span>
+</td>
+</tr>
+`
+}).join('')}
+</tbody>
+`
+
+// Show skipped section if any
+if(skipped.length > 0){
+document.getElementById('skippedSection').style.display = 'block'
+document.getElementById('skippedList').innerHTML = skipped.map(s => 
+`<div>• <strong>${s.model}</strong> - ${s.reason}</div>`
+).join('')
+} else {
+document.getElementById('skippedSection').style.display = 'none'
+}
+}
+
+function updateValue(index, value){
+parsedChanges[index].new_price = parseFloat(value)
+// Recalculate change percentage
+const c = parsedChanges[index]
+const diff = c.new_price - c.old_price
+const diffPercent = ((diff / c.old_price) * 100).toFixed(1)
+const isIncrease = diff > 0
+
+// Update row styling
+const row = event.target.closest('tr')
+row.className = isIncrease ? 'diff-up' : 'diff-down'
+
+// Update change cell
+const changeCell = row.querySelector('.price-change')
+changeCell.className = `price-change ${isIncrease ? 'increase' : 'decrease'}`
+changeCell.textContent = `${isIncrease ? '+' : ''}${diff.toLocaleString('en-IN')} (${isIncrease ? '+' : ''}${diffPercent}%)`
+}
+
+function confirmBulk(){
+if(!confirm(`Apply price changes to ${parsedChanges.length} tanks?`)) return
+
+fetch("{% url 'admin_bulk_price_update' %}", {
+method: 'POST',
+headers: {
+'X-CSRFToken': getCookie('csrftoken'),
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({changes: parsedChanges})
+})
+.then(res => res.json())
+.then(data => {
+if(data.success){
+closeModal()
+showToast(`✅ Successfully updated ${data.updated} tank prices`, 'success')
+setTimeout(() => location.reload(), 1500)
+} else {
+showToast(data.error, 'error')
+}
+})
+.catch(err => {
+showToast('Failed to apply changes', 'error')
+})
+}
+
+function closeModal(){
+document.getElementById('previewModal').classList.remove('show')
+}
+
+function showToast(message, type = 'success'){
+const toast = document.getElementById('toast')
+toast.textContent = message
+toast.className = `toast ${type} show`
+setTimeout(() => toast.classList.remove('show'), 3000)
+}
+
+function getCookie(name){
+let value = `; ${document.cookie}`
+let parts = value.split(`; ${name}=`)
+if(parts.length === 2) return parts.pop().split(';').shift()
+}
+</script>
+
+</body>
+</html>

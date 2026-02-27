@@ -1,0 +1,388 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSV Upload - TankMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+            background:#f5f5f7;
+        }
+
+        header {
+            background:white;
+            padding:1.2rem 2rem;
+            border-bottom:1px solid #e5e5ea;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        header h1 {
+            font-size:1.4rem;
+            font-weight:600;
+        }
+
+        .dashboard-link {
+            padding:0.6rem 1rem;
+            background:#111;
+            color:white;
+            text-decoration:none;
+            border-radius:10px;
+            font-size:0.85rem;
+            transition:0.2s ease;
+        }
+
+        .dashboard-link:hover {
+            background:#000;
+            transform:translateY(-1px);
+        }
+
+        .container {
+            max-width:1100px;
+            margin:3rem auto;
+            padding:0 1rem;
+        }
+
+        .upload-card {
+            background:white;
+            border-radius:24px;
+            padding:2.5rem;
+            box-shadow:0 20px 40px rgba(0,0,0,0.08);
+        }
+
+        .upload-zone {
+            border:2px dashed #d1d1d6;
+            border-radius:20px;
+            padding:3rem;
+            text-align:center;
+            cursor:pointer;
+            transition:0.2s ease;
+        }
+
+        .upload-zone:hover {
+            border-color:#111;
+            background:#fafafa;
+        }
+
+        .upload-zone i {
+            font-size:3rem;
+            color:#007AFF;
+            margin-bottom:1rem;
+        }
+
+        .file-name {
+            margin-top:1rem;
+            font-size:0.9rem;
+            color:#111;
+        }
+
+        .preview-card {
+            margin-top:2.5rem;
+            display:none;
+        }
+
+        .summary-grid {
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:1rem;
+            margin-bottom:1.5rem;
+        }
+
+        .summary-box {
+            background:white;
+            padding:1.5rem;
+            border-radius:16px;
+            box-shadow:0 10px 25px rgba(0,0,0,0.06);
+        }
+
+        .summary-box h3 {
+            font-size:0.9rem;
+            color:#6e6e73;
+            margin-bottom:0.5rem;
+        }
+
+        .summary-box p {
+            font-size:1.4rem;
+            font-weight:600;
+        }
+
+        .table-wrapper {
+            background:white;
+            border-radius:20px;
+            padding:1.5rem;
+            box-shadow:0 10px 25px rgba(0,0,0,0.06);
+            max-height:400px;
+            overflow-y:auto;
+        }
+
+        table {
+            width:100%;
+            border-collapse:collapse;
+            font-size:0.85rem;
+        }
+
+        th {
+            text-align:left;
+            padding:0.75rem;
+            background:#f5f5f7;
+            font-size:0.75rem;
+            text-transform:uppercase;
+            letter-spacing:0.05em;
+        }
+
+        td {
+            padding:0.75rem;
+            border-bottom:1px solid #f2f2f7;
+        }
+
+        tr.create { background:#e8f8f0; }
+        tr.update { background:#fff7e6; }
+
+        .confirm-btn {
+            margin-top:1.5rem;
+            padding:0.9rem 2rem;
+            background:#111;
+            color:white;
+            border:none;
+            border-radius:14px;
+            font-weight:600;
+            cursor:pointer;
+            transition:0.2s ease;
+        }
+
+        .confirm-btn:hover {
+            background:#000;
+            transform:translateY(-1px);
+        }
+
+        .modal-overlay {
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,0.45);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index:9999;
+        }
+
+        .modal-overlay.show { display:flex; }
+
+        .modal {
+            background:white;
+            padding:2rem;
+            border-radius:20px;
+            width:420px;
+            box-shadow:0 30px 60px rgba(0,0,0,0.2);
+            animation:pop 0.2s ease;
+        }
+
+        @keyframes pop {
+            from { transform:scale(0.95); opacity:0; }
+            to { transform:scale(1); opacity:1; }
+        }
+
+        .modal-actions {
+            margin-top:1.5rem;
+            display:flex;
+            justify-content:flex-end;
+            gap:1rem;
+        }
+
+        .btn-secondary {
+            background:white;
+            border:1px solid #d1d1d6;
+            padding:0.6rem 1rem;
+            border-radius:10px;
+            cursor:pointer;
+        }
+
+        .btn-primary {
+            background:#111;
+            color:white;
+            border:none;
+            padding:0.6rem 1rem;
+            border-radius:10px;
+            cursor:pointer;
+        }
+
+        .toast {
+            position:fixed;
+            top:20px;
+            right:20px;
+            background:white;
+            padding:1rem 1.5rem;
+            border-radius:14px;
+            box-shadow:0 15px 35px rgba(0,0,0,0.2);
+            display:none;
+            z-index:10000;
+        }
+
+        .toast.show { display:block; }
+        .toast.success { border-left:4px solid #34C759; }
+        .toast.error { border-left:4px solid #FF3B30; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>CSV Upload</h1>
+    <a href="{% url 'admin_dashboard' %}" class="dashboard-link">← Dashboard</a>
+</header>
+
+<div class="container">
+    <div class="upload-card">
+        <div class="upload-zone" id="uploadZone">
+            <i class="ri-upload-cloud-2-line"></i>
+            <h2>Drop CSV or Click to Upload</h2>
+            <p style="color:#6e6e73;margin-top:0.5rem;">
+                Required: tank_model, diameter, height, net_capacity, gross_capacity, ideal_price, nrp
+            </p>
+            <div class="file-name" id="fileName"></div>
+            <input type="file" id="csvFile" accept=".csv" hidden>
+        </div>
+
+        <div class="preview-card" id="previewCard">
+            <div class="summary-grid">
+                <div class="summary-box">
+                    <h3>To Create</h3>
+                    <p id="createCount">0</p>
+                </div>
+                <div class="summary-box">
+                    <h3>To Update</h3>
+                    <p id="updateCount">0</p>
+                </div>
+                <div class="summary-box">
+                    <h3>Errors</h3>
+                    <p id="errorCount">0</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="changesTable"></table>
+            </div>
+
+            <button class="confirm-btn" onclick="openConfirmModal()">Confirm & Apply Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal">
+        <h3>Confirm Changes</h3>
+        <p>This will permanently update your database.</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn-primary" onclick="confirmUpload()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('csvFile');
+const previewCard = document.getElementById('previewCard');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) previewCSV(e.target.files[0]);
+});
+
+function previewCSV(file) {
+    const formData = new FormData();
+    formData.append('csv_file', file);
+
+    fetch("{% url 'admin_csv_preview' %}", {
+        method:'POST',
+        headers:{ 'X-CSRFToken': getCookie('csrftoken') },
+        body:formData
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.success){
+            displayPreview(data);
+        } else {
+            showToast(data.error,"error");
+        }
+    });
+}
+
+function displayPreview(data){
+    previewCard.style.display="block";
+
+    document.getElementById('createCount').textContent=data.summary.to_create;
+    document.getElementById('updateCount').textContent=data.summary.to_update;
+    document.getElementById('errorCount').textContent=data.summary.errors;
+
+    const table=document.getElementById('changesTable');
+    table.innerHTML=`
+        <thead>
+            <tr><th>Action</th><th>Model</th><th>Data</th></tr>
+        </thead>
+        <tbody>
+            ${data.changes.map(c=>`
+                <tr class="${c.action}">
+                    <td>${c.action.toUpperCase()}</td>
+                    <td>${c.model}</td>
+                    <td>${JSON.stringify(c.new_data)}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+}
+
+function openConfirmModal(){
+    document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeModal(){
+    document.getElementById('confirmModal').classList.remove('show');
+}
+
+function confirmUpload(){
+    closeModal();
+
+    fetch("{% url 'admin_csv_confirm' %}",{
+        method:'POST',
+        headers:{
+            'X-CSRFToken':getCookie('csrftoken'),
+            'Content-Type':'application/json'
+        }
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.success){
+            showToast(`Created: ${data.created}, Updated: ${data.updated}`,"success");
+            setTimeout(()=>location.reload(),1500);
+        } else {
+            showToast(data.error,"error");
+        }
+    });
+}
+
+function showToast(message,type="success"){
+    const toast=document.getElementById('toast');
+    toast.textContent=message;
+    toast.className=`toast ${type} show`;
+    setTimeout(()=>toast.classList.remove('show'),3000);
+}
+
+function getCookie(name){
+    let value=`; ${document.cookie}`;
+    let parts=value.split(`; ${name}=`);
+    if(parts.length===2) return parts.pop().split(';').shift();
+}
+</script>
+
+</body>
+</html>

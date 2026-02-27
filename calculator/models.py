@@ -16,7 +16,7 @@ class Tank(models.Model):
         ('RCT', 'Rhino Commercial Tank'),
         ('SST', 'SecureStore Micro-Coated Tanks'),
         ('SFM', 'Factory Mutual Tank'),
-        ('GFS', 'Glass Fiber Sheets Tank'),
+        ('GFS', 'Glass Fused Tank'),
     ]
     
     # Core identification
@@ -65,6 +65,13 @@ class Tank(models.Model):
         help_text="No Regret Price in ₹"
     )
     
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Active tanks appear in public search. Inactive tanks are hidden."
+    )
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
