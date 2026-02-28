@@ -367,7 +367,7 @@
             Prev</a>
             {% endif %}
 
-            <span class="current">{{ tanks.number }} / {{ tanks.paginator.num_pages }}</span>
+            <span class="current" style="display:flex;align-items:center;">{{ tanks.number }} / {{ tanks.paginator.num_pages }}</span>
 
             {% if tanks.has_next %}
             <a href="?page={{ tanks.next_page_number }}
