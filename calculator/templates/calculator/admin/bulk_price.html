@@ -21,6 +21,16 @@ align-items:center;
 
 header h1{font-size:1.4rem;font-weight:600}
 
+.dashboard-link_name{
+padding:.6rem 1rem;
+background:#fff;
+color:#111;
+text-decoration:none;
+border-radius:10px;
+font-size:.85rem;
+transition:.2s ease;
+}
+
 .dashboard-link{
 padding:.6rem 1rem;
 background:#111;
@@ -531,13 +541,45 @@ font-family:inherit;
 background:#000;
 transform:translateY(-1px);
 }
+
+.template-link {
+    padding: 0.6rem 1.1rem;
+    background: rgba(0, 122, 255, 0.1); /* Soft tint */
+    color: #007AFF;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    border: 1.5px solid transparent;
+}
+
+.template-link:hover {
+    background: #007AFF;
+    color: white;
+    box-shadow: 0 8px 20px -6px rgba(0, 122, 255, 0.5);
+}
+
+
 </style>
 </head>
 <body>
 
 <header>
+<a href="{% url 'admin_dashboard' %}" 
+       class="dashboard-link_name">
 <h1>💰 Bulk Price Update</h1>
-<a href="{% url 'admin_dashboard' %}" class="dashboard-link">← Dashboard</a>
+</a>
+<div style="display:flex; gap:10px; align-items:center;">
+    <a href="{% url 'download_tank_template' %}" class="template-link">
+     Download Template
+    </a>
+
+    <a href="{% url 'admin_dashboard' %}" 
+       class="dashboard-link">
+        ← Dashboard
+    </a>
+</div>
 </header>
 
 <div class="container">
@@ -547,9 +589,9 @@ transform:translateY(-1px);
 <strong>Accepted CSV formats:</strong>
 </p>
 <ul style="font-size:.8rem;color:#6e6e73;margin-bottom:1rem;padding-left:1.5rem">
-<li><code>tank_model, ideal_price, nrp</code> (Full format)</li>
-<li><code>model_number, new_price</code> (Simple format)</li>
-<li><code>model, price</code> (Alternative)</li>
+<li><code>id	tank_model	diameter	height	net_capacity	gross_capacity	ideal_price	nrp</code> (Full format)</li>
+{% comment %} <li><code>model_number, new_price</code> (Simple format)</li>
+<li><code>model, price</code> (Alternative)</li> {% endcomment %}
 </ul>
 <p style="font-size:.8rem;color:#FF9500;margin-bottom:1rem">
 💡 Tip: Export your full tanks.csv and update the price columns!

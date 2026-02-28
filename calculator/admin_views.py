@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
 
-@staff_member_required
+@login_required
 def admin_dashboard(request):
     """Main admin dashboard with statistics"""
     context = {
@@ -35,7 +35,7 @@ def admin_dashboard(request):
     return render(request, 'calculator/admin/dashboard.html', context)
 
 
-@staff_member_required
+@login_required
 def admin_tank_list(request):
     """Tank list with search, filter, and pagination"""
     tanks = Tank.objects.all().order_by('-updated_at')
@@ -71,7 +71,7 @@ def admin_tank_list(request):
     })
 
 
-@staff_member_required
+@login_required
 @require_POST
 def admin_tank_update(request):
     """Update single tank via AJAX"""
@@ -108,7 +108,7 @@ def admin_tank_update(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@staff_member_required
+@login_required
 @require_POST
 def admin_tank_toggle(request):
     """Toggle tank active status"""
@@ -129,13 +129,13 @@ def admin_tank_toggle(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@staff_member_required
+@login_required
 def admin_csv_upload(request):
     """CSV upload page"""
     return render(request, 'calculator/admin/csv_upload.html')
 
 
-@staff_member_required
+@login_required
 @require_POST
 def admin_csv_preview(request):
     """Preview CSV changes before applying"""
@@ -224,7 +224,7 @@ def admin_csv_preview(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@staff_member_required
+@login_required
 @require_POST
 def admin_csv_confirm(request):
     """Apply confirmed CSV changes"""
@@ -287,13 +287,13 @@ def admin_csv_confirm(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@staff_member_required
+@login_required
 def admin_bulk_price(request):
     """Bulk price update page"""
     return render(request, 'calculator/admin/bulk_price.html')
 
 
-@staff_member_required
+@login_required
 @require_POST
 def admin_bulk_price_update(request):
     """Handle bulk price update with preview/confirm flow - supports ideal_price AND nrp"""
@@ -504,3 +504,72 @@ def admin_bulk_price_update(request):
             
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def admin_tank_export(request):
+
+    export_type = request.GET.get("type", "all")
+
+    # Always define tanks first
+    tanks = Tank.objects.all().order_by('-updated_at')
+
+    # === Filename logic ===
+    if export_type == "all":
+        filename = "all_tanks"
+
+    elif export_type == "active":
+        filename = "active_tanks"
+        tanks = tanks.filter(is_active=True)
+
+    elif export_type == "inactive":
+        filename = "inactive_tanks"
+        tanks = tanks.filter(is_active=False)
+
+    elif export_type == "modified_today":
+        from django.utils.timezone import now
+        today = now().date()
+        filename = "modified_today_tanks"
+        tanks = tanks.filter(updated_at__date=today)
+
+    else:
+        # Category export (GFS, RCT, SST, FM etc)
+        filename = f"{export_type.lower()}_tanks"
+        tanks = tanks.filter(category=export_type)
+
+    # === Create CSV ===
+    response = HttpResponse(content_type="text/csv")
+    response['Content-Disposition'] = f'attachment; filename="{filename}.csv"'
+
+    writer = csv.writer(response)
+
+    writer.writerow([
+        "ID",
+        "Model",
+        "Category",
+        "Diameter",
+        "Height",
+        "Net Capacity",
+        "Gross Capacity",
+        "Ideal Price",
+        "NRP",
+        "Status",
+        "Last Updated"
+    ])
+
+    for tank in tanks:
+        writer.writerow([
+            tank.id,
+            tank.model,
+            tank.get_category_display(),
+            tank.diameter,
+            tank.height,
+            tank.net_capacity,
+            tank.gross_capacity,
+            tank.ideal_price,
+            tank.nrp,
+            "Active" if tank.is_active else "Inactive",
+            tank.updated_at.strftime("%Y-%m-%d %H:%M"),
+        ])
+
+    return response

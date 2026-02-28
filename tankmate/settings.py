@@ -125,3 +125,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
             
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+LOGIN_URL = 'custom_login'
+LOGIN_REDIRECT_URL = 'admin_dashboard'
+LOGOUT_REDIRECT_URL = 'custom_login'

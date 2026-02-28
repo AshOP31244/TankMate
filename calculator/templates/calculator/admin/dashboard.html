@@ -5,140 +5,332 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TankMate Admin Dashboard</title>
+    
+    <link rel="icon" type="image/png" href="{% static 'calculator/icons/favicon.png' %}">
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f5f7;
-            color: #1d1d1f;
+        :root {
+            --system-blue: #007AFF;
+            --system-blue-light: rgba(0, 122, 255, 0.1);
+            --system-red: #FF3B30;
+            --system-red-light: rgba(255, 59, 48, 0.1);
+            --system-green: #34C759;
+            --system-gray-bg: #f5f5f7;
+            --system-text-main: #1d1d1f;
+            --system-text-secondary: #86868b;
+            --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            --card-shadow-hover: 0 10px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
         }
         
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            background: var(--system-gray-bg);
+            color: var(--system-text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Glassmorphic Header */
         .admin-header {
-            background: white;
-            border-bottom: 1px solid #e5e5ea;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .admin-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
+        /* Soft Pill Navigation */
         .admin-nav {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
         
         .admin-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 0.5rem 1rem;
-            background: #007AFF;
-            color: white;
+            background: #e8e8ed;
+            color: var(--system-text-main);
             text-decoration: none;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.2s;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
+        .admin-nav a i {
+            font-size: 1rem;
+            color: var(--system-text-secondary);
+            transition: color 0.2s ease;
+        }
+
         .admin-nav a:hover {
-            background: #0051D5;
+            background: var(--system-blue-light);
+            color: var(--system-blue);
+            transform: scale(1.02);
+        }
+
+        .admin-nav a:hover i {
+            color: var(--system-blue);
+        }
+
+        /* Destructive Logout Button */
+        .admin-nav a[href="/admin/logout/"]:hover {
+            background: var(--system-red-light);
+            color: var(--system-red);
+        }
+        .admin-nav a[href="/admin/logout/"]:hover i {
+            color: var(--system-red);
         }
         
         .container {
             max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
         }
         
+
+        .admin-title {
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-size:1.4rem;
+            font-weight:600;
+        }
+
+        .admin-title img {
+            height:32px;
+            width:auto;
+        }
+
+        /* Floating Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
         
         .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            background: #ffffff;
+            padding: 1.75rem;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
         }
         
         .stat-card h3 {
-            font-size: 0.875rem;
-            color: #6e6e73;
+            font-size: 0.85rem;
+            color: var(--system-text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
         }
         
         .stat-card .value {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #007AFF;
+            letter-spacing: -0.04em;
+            color: var(--system-text-main);
         }
         
+        /* Category Section */
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0 0 1.25rem 0.5rem;
+        }
+
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
         }
         
         .category-card {
-            background: white;
-            padding: 1.25rem;
-            border-radius: 12px;
-            border-left: 4px solid #007AFF;
+            background: #ffffff;
+            padding: 1.25rem 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--system-blue);
+            opacity: 0.8;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .category-card:hover {
+            transform: scale(1.01);
+            box-shadow: var(--card-shadow-hover);
         }
         
         .category-card h4 {
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--system-text-main);
         }
         
         .category-card p {
-            font-size: 0.875rem;
-            color: #6e6e73;
+            font-size: 0.85rem;
+            color: var(--system-text-secondary);
+            font-weight: 500;
         }
         
+        /* Logout Button Styled Like Nav Pill */
+        .logout-form {
+            display: inline-flex;
+        }
+
+        /* Base collapsed state (icon only) */
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+
+            width: 40px;               /* icon-only width */
+            height: 40px;
+            padding: 0;
+
+            background: #e8e8ed;
+            color: var(--system-text-main);
+            border: none;
+            border-radius: 20px;
+
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+
+            overflow: hidden;
+            white-space: nowrap;
+
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Icon styling */
+        .logout-btn i {
+            font-size: 1.1rem;
+            color: var(--system-text-secondary);
+            transition: color 0.25s ease;
+        }
+
+        /* Hide text initially */
+        .logout-btn span {
+            opacity: 0;
+            max-width: 0;
+            overflow: hidden;
+            transition: opacity 0.25s ease 0.1s;
+        }
+
+        /* Expand on hover */
+        .logout-btn:hover {
+            width: 120px;              /* expanded width */
+            padding: 0 1rem;
+            background: var(--system-red-light);
+            color: var(--system-red);
+        }
+
+        /* Show text smoothly */
+        .logout-btn:hover span {
+            opacity: 1;
+            max-width: 100px;
+        }
+
+        /* Icon color change */
+        .logout-btn:hover i {
+            color: var(--system-red);
+        }
+
+        /* Dynamic Island / iOS Style Toast */
         .toast {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            display: none;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            background: rgba(25, 25, 25, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            opacity: 0;
             z-index: 9999;
-            animation: slideIn 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
         }
         
-        .toast.show { display: block; }
-        
-        .toast.success { border-left: 4px solid #34C759; }
-        .toast.error { border-left: 4px solid #FF3B30; }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .toast.show { 
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
         }
     </style>
 </head>
 <body>
     <header class="admin-header">
-        <h1>🛡️ TankMate Admin Dashboard</h1>
+        <h1 class="admin-title">
+            <img src="{% static 'calculator/icons/header_icon.webp' %}" alt="TankMate Logo">
+            TankMate Admin
+        </h1>
         <div class="admin-nav">
             <a href="{% url 'admin_tank_list' %}"><i class="ri-list-check"></i> Manage Tanks</a>
             <a href="{% url 'admin_csv_upload' %}"><i class="ri-upload-cloud-line"></i> CSV Upload</a>
             <a href="{% url 'admin_bulk_price' %}"><i class="ri-price-tag-3-line"></i> Bulk Price</a>
             <a href="{% url 'home' %}"><i class="ri-home-line"></i> Public Site</a>
-            <a href="/admin/logout/"><i class="ri-logout-box-line"></i> Logout</a>
+            <form method="POST" action="{% url 'custom_logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    <i class="ri-logout-box-line"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
     </header>
 
@@ -150,15 +342,15 @@
             </div>
             <div class="stat-card">
                 <h3>Active Tanks</h3>
-                <div class="value">{{ active_tanks }}</div>
+                <div class="value" style="color: var(--system-green);">{{ active_tanks }}</div>
             </div>
             <div class="stat-card">
                 <h3>Inactive Tanks</h3>
-                <div class="value">{{ inactive_tanks }}</div>
+                <div class="value" style="color: var(--system-text-secondary);">{{ inactive_tanks }}</div>
             </div>
             <div class="stat-card">
                 <h3>Last Updated</h3>
-                <div class="value" style="font-size: 1rem;">
+                <div class="value" style="font-size: 1.1rem; letter-spacing: normal;">
                     {% if last_updated %}
                         {{ last_updated.updated_at|date:"M d, Y H:i" }}
                     {% else %}
@@ -168,12 +360,12 @@
             </div>
         </div>
 
-        <h2 style="margin: 2rem 0 1rem; font-size: 1.5rem;">Category Breakdown</h2>
+        <h2>Category Breakdown</h2>
         <div class="category-grid">
             {% for code, data in categories.items %}
             <div class="category-card">
                 <h4>{{ data.name }}</h4>
-                <p>Total: {{ data.count }} | Active: {{ data.active }}</p>
+                <p>Total: {{ data.count }} &nbsp;·&nbsp; Active: {{ data.active }}</p>
             </div>
             {% endfor %}
         </div>
@@ -185,7 +377,12 @@
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.className = `toast ${type} show`;
+            
+            // Add iOS style icon based on type
+            const icon = type === 'success' ? '✓ ' : '✕ ';
+            toast.textContent = icon + message;
+            
+            toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>

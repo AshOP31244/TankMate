@@ -14,14 +14,118 @@
             padding-bottom: 3rem;
         }
         
-        .admin-header {
-            background: white;
-            border-bottom: 1px solid #e5e5ea;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        :root {
+    --system-blue: #007AFF;
+    --system-green: #34C759;
+    --system-gray: #8E8E93;
+    --bg-header: rgba(255, 255, 255, 0.8);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+}
+
+.admin-header {
+    background: var(--bg-header);
+    backdrop-filter: blur(20px); /* Apple glass effect */
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.8rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Home Link/Logo Style */
+.header-title-link {
+    text-decoration: none;
+    color: #1d1d1f;
+    transition: opacity 0.2s ease;
+}
+
+.header-title-link:hover {
+    opacity: 0.7;
+}
+
+.admin-header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+/* Action Buttons */
+.btn-action {
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px; /* Softer corners */
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.btn-export {
+    background: var(--system-green);
+    color: white;
+}
+
+.btn-dashboard {
+    background: #f5f5f7;
+    color: var(--system-blue);
+}
+
+.btn-action:hover {
+    transform: scale(1.02);
+    filter: brightness(1.05);
+}
+
+.btn-action:active {
+    transform: scale(0.98);
+}
+
+/* Dropdown Menu */
+#exportMenu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    background: white;
+    {% comment %} backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px); {% endcomment %}
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    min-width: 220px;
+    padding: 6px;
+    z-index: 1000;
+    animation: menuFadeIn 0.2s ease-out;
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.export-link {
+    display: block;
+    padding: 10px 14px;
+    text-decoration: none;
+    color: #1d1d1f;
+    font-size: 0.88rem;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.export-link:hover {
+    background: var(--system-blue);
+    color: white;
+}
         
         .container {
             max-width: 1400px;
@@ -125,22 +229,52 @@
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        
-        .pagination a {
-            padding: 0.5rem 1rem;
-            background: white;
-            border: 1px solid #e5e5ea;
-            border-radius: 8px;
+
+        .pagination a, 
+        .pagination .current-page {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: all 0.2s ease;
             text-decoration: none;
-            color: #007AFF;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px; /* Touch target size */
         }
-        
-        .pagination a.current {
-            background: #007AFF;
-            color: white;
+
+        /* Link Style */
+        .pagination a {
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Hover & Active Effects */
+        .pagination a:hover {
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
+            transform: translateY(-1px);
+        }
+
+        .pagination a:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Page Indicator (1 / 10) */
+        .pagination .current-page {
+            background: #f2f2f7;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            cursor: default;
         }
         
         .toast {
@@ -271,6 +405,8 @@
             cursor: pointer;
         }
 
+
+        
         .toast.show { display: block; }
         .toast.success { border-left: 4px solid #34C759; }
         .toast.error { border-left: 4px solid #FF3B30; }
@@ -278,8 +414,49 @@
 </head>
 <body>
     <header class="admin-header">
-        <h1>Manage Tanks</h1>
-        <a href="{% url 'admin_dashboard' %}" style="padding: 0.5rem 1rem; background: #007AFF; color: white; text-decoration: none; border-radius: 8px;">← Dashboard</a>
+        <div class="left-section">
+            <a href="/" class="header-title-link">
+                <h1>Manage Tanks</h1>
+            </a>
+        </div>
+
+        <div class="right-section" style="display: flex; gap: 12px; align-items: center;">
+            <div style="position: relative;">
+                <button class="btn-action btn-export" onclick="toggleExportMenu()">
+                    <span style="font-size: 1.1rem;">􀈄</span> Export
+                </button>
+
+                <div id="exportMenu" style="...">
+
+                    <a href="{% url 'admin_tank_export' %}?type=all" class="export-link">
+                        All Tanks
+                    </a>
+
+                    {% for code, name in categories %}
+                        <a href="{% url 'admin_tank_export' %}?type={{ code }}" class="export-link">
+                            Only {{ name }}
+                        </a>
+                    {% endfor %}
+
+                    <a href="{% url 'admin_tank_export' %}?type=active" class="export-link">
+                        Only Active
+                    </a>
+
+                    <a href="{% url 'admin_tank_export' %}?type=inactive" class="export-link">
+                        Only Inactive
+                    </a>
+
+                    <a href="{% url 'admin_tank_export' %}?type=modified_today" class="export-link">
+                        Modified Today
+                    </a>
+
+                </div>
+            </div>
+
+            <a href="{% url 'admin_dashboard' %}" class="btn-action btn-dashboard">
+                Dashboard
+            </a>
+        </div>
     </header>
 
     <div class="container">
@@ -358,29 +535,19 @@
 
         <div class="pagination">
             {% if tanks.has_previous %}
-            <a href="?page=1&search={{ current_search }}&category={{ current_category }}&status={{ current_status }}">First</a>
-
-            <a href="?page={{ tanks.previous_page_number }}
-            &search={{ current_search }}
-            &category={{ current_category }}
-            &status={{ current_status }}">
-            Prev</a>
+                <a href="?page={{ tanks.previous_page_number }}&search={{ current_search }}&category={{ current_category }}&status={{ current_status }}">
+                    &larr; Prev
+                </a>
             {% endif %}
 
-            <span class="current" style="display:flex;align-items:center;">{{ tanks.number }} / {{ tanks.paginator.num_pages }}</span>
+            <span class="current-page">
+                {{ tanks.number }} of {{ tanks.paginator.num_pages }}
+            </span>
 
             {% if tanks.has_next %}
-            <a href="?page={{ tanks.next_page_number }}
-            &search={{ current_search }}
-            &category={{ current_category }}
-            &status={{ current_status }}">
-            Next</a>
-
-            <a href="?page={{ tanks.paginator.num_pages }}
-            &search={{ current_search }}
-            &category={{ current_category }}
-            &status={{ current_status }}">
-            Last</a>
+                <a href="?page={{ tanks.next_page_number }}&search={{ current_search }}&category={{ current_category }}&status={{ current_status }}">
+                    Next &rarr;
+                </a>
             {% endif %}
         </div>
     </div>
@@ -539,6 +706,18 @@
                 }
             });
         }
+
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('exportMenu');
+            if (!e.target.closest('#exportMenu') && !e.target.closest('button')) {
+                menu.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>

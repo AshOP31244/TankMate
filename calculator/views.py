@@ -1,10 +1,39 @@
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.http import JsonResponse , HttpResponse
+from django.shortcuts import render, redirect
 from django.db.models import Q
 from django.db.models.functions import Cast
 from django.db.models import FloatField
-
+import csv
+from django.contrib import messages
 from .models import Tank
+from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.http import require_POST
+
+def custom_login(request):
+    if request.user.is_authenticated:
+        return redirect('admin_dashboard')
+
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if user.is_staff:
+                login(request, user)
+                return redirect('admin_dashboard')
+            else:
+                messages.error(request, "You do not have admin access.")
+        else:
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, 'calculator/admin/login.html')
+
+@require_POST
+def custom_logout(request):
+    logout(request)
+    return redirect('custom_login')
 
 
 def home(request):
@@ -339,3 +368,22 @@ def get_category_stats(request):
     
     return JsonResponse({"stats": stats})
 
+def download_tank_template(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="tank_template.csv"'
+
+    writer = csv.writer(response)
+
+    # Header row (exact format you want)
+    writer.writerow([
+        'id',
+        'tank_model',
+        'diameter',
+        'height',
+        'net_capacity',
+        'gross_capacity',
+        'ideal_price',
+        'nrp'
+    ])
+
+    return response
