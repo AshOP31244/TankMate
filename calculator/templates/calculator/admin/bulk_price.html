@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Bulk Price Update - TankMate Admin</title>
-<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicons.css" rel="stylesheet">
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -52,6 +52,7 @@ text-align:center;
 cursor:pointer;
 transition:.2s ease;
 margin:1.5rem 0;
+position:relative;
 }
 
 .drop-zone:hover{border-color:#111;background:#fafafa}
@@ -80,6 +81,33 @@ font-size:.9rem;
 .action-btn:hover:not(:disabled){background:#000;transform:translateY(-1px)}
 .action-btn:disabled{opacity:.4;cursor:not-allowed}
 
+/* Loading Overlay */
+.loading-overlay{
+position:absolute;
+inset:0;
+background:rgba(255,255,255,.95);
+display:none;
+align-items:center;
+justify-content:center;
+border-radius:20px;
+z-index:10;
+}
+
+.loading-overlay.show{display:flex}
+
+.loader{
+width:48px;
+height:48px;
+border:4px solid #f3f3f3;
+border-top:4px solid #007AFF;
+border-radius:50%;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+to{transform:rotate(360deg)}
+}
+
 .modal-overlay{
 position:fixed;
 inset:0;
@@ -96,7 +124,7 @@ padding:1rem;
 .modal{
 background:white;
 width:100%;
-max-width:900px;
+max-width:1100px;
 max-height:85vh;
 overflow:auto;
 padding:2rem;
@@ -168,7 +196,7 @@ z-index:10;
 th{
 background:#f5f5f7;
 text-align:left;
-padding:.75rem 1rem;
+padding:.75rem .5rem;
 font-size:.7rem;
 text-transform:uppercase;
 letter-spacing:.05em;
@@ -176,7 +204,7 @@ border-bottom:2px solid #e5e5ea;
 }
 
 td{
-padding:.75rem 1rem;
+padding:.75rem .5rem;
 border-bottom:1px solid #f2f2f7;
 }
 
@@ -187,19 +215,19 @@ background:#fafafa;
 .old-price{
 color:#FF3B30;
 font-weight:600;
-font-size:.9rem;
+font-size:.85rem;
 }
 
-.new-price-cell input{
+td input{
 width:100%;
-padding:.5rem .75rem;
+padding:.4rem .6rem;
 border:1px solid #d1d1d6;
-border-radius:8px;
-font-size:.85rem;
+border-radius:6px;
+font-size:.8rem;
 font-weight:600;
 }
 
-.new-price-cell input:focus{
+td input:focus{
 outline:none;
 border-color:#007AFF;
 box-shadow:0 0 0 3px rgba(0,122,255,.1);
@@ -209,7 +237,7 @@ box-shadow:0 0 0 3px rgba(0,122,255,.1);
 .diff-down{background:#fff2f2}
 
 .price-change{
-font-size:.75rem;
+font-size:.7rem;
 color:#6e6e73;
 font-weight:500;
 }
@@ -234,6 +262,8 @@ border-radius:10px;
 cursor:pointer;
 font-weight:600;
 transition:.2s ease;
+font-family:inherit;
+font-size:.9rem;
 }
 
 .btn-secondary:hover{
@@ -249,6 +279,8 @@ border-radius:10px;
 cursor:pointer;
 font-weight:600;
 transition:.2s ease;
+font-family:inherit;
+font-size:.9rem;
 }
 
 .btn-primary:hover{
@@ -298,6 +330,207 @@ color:#92400E;
 max-height:100px;
 overflow-y:auto;
 }
+
+/* Confirmation Modal */
+.confirm-modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.6);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:10000;
+padding:1rem;
+}
+
+.confirm-modal.show{display:flex}
+
+.confirm-content{
+background:white;
+max-width:420px;
+width:100%;
+padding:2rem;
+border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,.3);
+animation:pop .2s ease;
+text-align:center;
+}
+
+.confirm-icon{
+width:60px;
+height:60px;
+margin:0 auto 1rem;
+background:linear-gradient(135deg,#FF9500 0%,#FF8000 100%);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:2rem;
+color:white;
+}
+
+.confirm-title{
+font-size:1.3rem;
+font-weight:700;
+margin-bottom:.5rem;
+color:#111;
+}
+
+.confirm-message{
+font-size:.9rem;
+color:#6e6e73;
+margin-bottom:1.5rem;
+line-height:1.5;
+}
+
+.confirm-stats{
+background:#f5f5f7;
+padding:1rem;
+border-radius:12px;
+margin-bottom:1.5rem;
+text-align:left;
+}
+
+.confirm-stat-row{
+display:flex;
+justify-content:space-between;
+padding:.5rem 0;
+font-size:.85rem;
+}
+
+.confirm-stat-label{
+color:#6e6e73;
+}
+
+.confirm-stat-value{
+font-weight:600;
+color:#111;
+}
+
+.confirm-actions{
+display:flex;
+gap:.75rem;
+justify-content:center;
+}
+
+.confirm-btn{
+flex:1;
+padding:.8rem 1.5rem;
+border:none;
+border-radius:12px;
+font-weight:600;
+font-size:.9rem;
+cursor:pointer;
+transition:.2s ease;
+font-family:inherit;
+}
+
+.confirm-btn-cancel{
+background:#f5f5f7;
+color:#111;
+}
+
+.confirm-btn-cancel:hover{
+background:#e5e5ea;
+}
+
+.confirm-btn-confirm{
+background:#111;
+color:white;
+}
+
+.confirm-btn-confirm:hover{
+background:#000;
+transform:translateY(-1px);
+}
+
+.confirm-btn-confirm.loading{
+opacity:.6;
+pointer-events:none;
+}
+
+/* Success Modal */
+.success-modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.6);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:10001;
+padding:1rem;
+}
+
+.success-modal.show{display:flex}
+
+.success-content{
+background:white;
+max-width:380px;
+width:100%;
+padding:2.5rem 2rem;
+border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,.3);
+animation:successPop .4s cubic-bezier(.68,-.55,.265,1.55);
+text-align:center;
+}
+
+@keyframes successPop{
+0%{transform:scale(.3);opacity:0}
+50%{transform:scale(1.05)}
+100%{transform:scale(1);opacity:1}
+}
+
+.success-icon{
+width:80px;
+height:80px;
+margin:0 auto 1.5rem;
+background:linear-gradient(135deg,#34C759 0%,#30B350 100%);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:3rem;
+color:white;
+animation:checkmark .5s ease .2s both;
+}
+
+@keyframes checkmark{
+0%{transform:scale(0) rotate(-45deg)}
+100%{transform:scale(1) rotate(0deg)}
+}
+
+.success-title{
+font-size:1.5rem;
+font-weight:700;
+margin-bottom:.75rem;
+color:#111;
+}
+
+.success-message{
+font-size:.95rem;
+color:#6e6e73;
+line-height:1.6;
+margin-bottom:2rem;
+}
+
+.success-btn{
+width:100%;
+padding:.9rem 1.5rem;
+background:#111;
+color:white;
+border:none;
+border-radius:12px;
+font-weight:600;
+font-size:.9rem;
+cursor:pointer;
+transition:.2s ease;
+font-family:inherit;
+}
+
+.success-btn:hover{
+background:#000;
+transform:translateY(-1px);
+}
 </style>
 </head>
 <body>
@@ -310,12 +543,22 @@ overflow-y:auto;
 <div class="container">
 <div class="upload-card">
 <h2>Upload Price CSV</h2>
-<p style="font-size:.85rem;color:#6e6e73;margin-bottom:1rem">
-Required columns: <code style="background:#f5f5f7;padding:2px 6px;border-radius:4px">model_number</code>, 
-<code style="background:#f5f5f7;padding:2px 6px;border-radius:4px">new_price</code>
+<p style="font-size:.85rem;color:#6e6e73;margin-bottom:.5rem">
+<strong>Accepted CSV formats:</strong>
+</p>
+<ul style="font-size:.8rem;color:#6e6e73;margin-bottom:1rem;padding-left:1.5rem">
+<li><code>tank_model, ideal_price, nrp</code> (Full format)</li>
+<li><code>model_number, new_price</code> (Simple format)</li>
+<li><code>model, price</code> (Alternative)</li>
+</ul>
+<p style="font-size:.8rem;color:#FF9500;margin-bottom:1rem">
+💡 Tip: Export your full tanks.csv and update the price columns!
 </p>
 
 <div class="drop-zone" onclick="document.getElementById('priceFile').click()">
+<div class="loading-overlay" id="uploadLoader">
+<div class="loader"></div>
+</div>
 <i class="ri-upload-cloud-2-line"></i>
 <div style="font-weight:600;margin-top:.5rem">Click to upload CSV</div>
 <div class="file-name" id="fileName"></div>
@@ -368,91 +611,138 @@ Apply Changes
 <div id="toast" class="toast"></div>
 
 <script>
-let parsedChanges = []
+let parsedChanges=[]
 
-const fileInput = document.getElementById('priceFile')
-const previewBtn = document.getElementById('previewBtn')
-const fileName = document.getElementById('fileName')
+const fileInput=document.getElementById('priceFile')
+const previewBtn=document.getElementById('previewBtn')
+const fileName=document.getElementById('fileName')
+const uploadLoader=document.getElementById('uploadLoader')
 
-fileInput.addEventListener('change', function(){
-if(this.files.length > 0){
-fileName.textContent = this.files[0].name
-fileName.style.color = '#34C759'
-previewBtn.disabled = false
+fileInput.addEventListener('change',function(){
+if(this.files.length>0){
+fileName.textContent=this.files[0].name
+fileName.style.color='#34C759'
+previewBtn.disabled=false
 }
 })
 
 function previewBulk(){
-const file = fileInput.files[0]
+const file=fileInput.files[0]
 if(!file) return
 
-const formData = new FormData()
-formData.append('price_csv', file)
+const formData=new FormData()
+formData.append('price_csv',file)
 
-// Show loading state
-previewBtn.disabled = true
-previewBtn.textContent = 'Processing...'
+uploadLoader.classList.add('show')
+previewBtn.disabled=true
 
-fetch("{% url 'admin_bulk_price_update' %}", {
-method: 'POST',
-headers: {'X-CSRFToken': getCookie('csrftoken')},
-body: formData
+fetch("{% url 'admin_bulk_price_update' %}",{
+method:'POST',
+headers:{'X-CSRFToken':getCookie('csrftoken')},
+body:formData
 })
-.then(res => res.json())
-.then(data => {
-previewBtn.disabled = false
-previewBtn.innerHTML = '<i class="ri-eye-line" style="margin-right:.5rem"></i>Preview Changes'
+.then(res=>res.json())
+.then(data=>{
+uploadLoader.classList.remove('show')
+previewBtn.disabled=false
 
 if(data.success){
-parsedChanges = data.changes
+parsedChanges=data.changes
 renderPreview(data)
 document.getElementById('previewModal').classList.add('show')
-} else {
-showToast(data.error, 'error')
+}else{
+showToast(data.error,'error')
 }
 })
-.catch(err => {
-previewBtn.disabled = false
-previewBtn.innerHTML = '<i class="ri-eye-line" style="margin-right:.5rem"></i>Preview Changes'
-showToast('Failed to process file', 'error')
+.catch(err=>{
+uploadLoader.classList.remove('show')
+previewBtn.disabled=false
+showToast('Failed to process file','error')
 })
 }
 
 function renderPreview(data){
-const changes = data.changes
-const skipped = data.skipped
+const changes=data.changes
+const skipped=data.skipped
 
-// Update summary
-document.getElementById('summaryUpdate').textContent = data.summary.to_update
-document.getElementById('summarySkipped').textContent = data.summary.skipped
+document.getElementById('summaryUpdate').textContent=data.summary.to_update
+document.getElementById('summarySkipped').textContent=data.summary.skipped
 
-// Render table
-const table = document.getElementById('previewTable')
-table.innerHTML = `
+if(changes.length===0){
+showToast('⚠️ No valid price updates found in CSV','error')
+closeModal()
+return
+}
+
+const table=document.getElementById('previewTable')
+table.innerHTML=`
 <thead>
 <tr>
 <th>Model</th>
-<th>Old Price</th>
-<th>New Price (Editable)</th>
+<th>Cat</th>
+<th>Old Ideal</th>
+<th>New Ideal</th>
+<th>Old NRP</th>
+<th>New NRP</th>
 <th>Change</th>
 </tr>
 </thead>
 <tbody>
-${changes.map((c, i) => {
-const diff = c.new_price - c.old_price
-const diffPercent = ((diff / c.old_price) * 100).toFixed(1)
-const isIncrease = diff > 0
-return `
-<tr class="${isIncrease ? 'diff-up' : 'diff-down'}">
-<td style="font-weight:600">${c.model}</td>
-<td class="old-price">₹${c.old_price.toLocaleString('en-IN')}</td>
-<td class="new-price-cell">
-<input type="number" value="${c.new_price}" onchange="updateValue(${i}, this.value)">
-</td>
+${changes.map((c,i)=>{
+const idealDiff=c.new_ideal_price-c.old_ideal_price
+const nrpDiff=c.new_nrp-c.old_nrp
+const idealPercent=((idealDiff/c.old_ideal_price)*100).toFixed(1)
+const nrpPercent=((nrpDiff/c.old_nrp)*100).toFixed(1)
+
+const hasIdealChange=idealDiff!==0
+const hasNrpChange=nrpDiff!==0
+
+const rowClass=(hasIdealChange||hasNrpChange)?
+(idealDiff>0||nrpDiff>0?'diff-up':'diff-down'):''
+
+return`
+<tr class="${rowClass}">
+<td style="font-weight:600;font-size:.85rem">${c.model}</td>
+<td><span style="font-size:.65rem;background:#f5f5f7;padding:2px 4px;border-radius:4px">${c.category}</span></td>
+
+<td class="old-price">₹${c.old_ideal_price.toLocaleString('en-IN')}</td>
 <td>
-<span class="price-change ${isIncrease ? 'increase' : 'decrease'}">
-${isIncrease ? '+' : ''}${diff.toLocaleString('en-IN')} (${isIncrease ? '+' : ''}${diffPercent}%)
-</span>
+<input 
+type="number" 
+value="${c.new_ideal_price}" 
+data-row="${i}"
+data-field="ideal"
+onchange="updatePrice(this)"
+min="1"
+step="1"
+>
+</td>
+
+<td class="old-price">₹${c.old_nrp.toLocaleString('en-IN')}</td>
+<td>
+<input 
+type="number" 
+value="${c.new_nrp}"
+data-row="${i}"
+data-field="nrp"
+onchange="updatePrice(this)"
+min="1"
+step="1"
+>
+</td>
+
+<td style="font-size:.7rem" id="change-${i}">
+${hasIdealChange?
+`<div class="price-change ${idealDiff>0?'increase':'decrease'}">
+Ideal: ${idealDiff>0?'+':''}₹${Math.abs(idealDiff).toLocaleString('en-IN')} (${idealDiff>0?'+':''}${idealPercent}%)
+</div>`:
+`<div style="color:#6e6e73">Ideal: No change</div>`}
+
+${hasNrpChange?
+`<div class="price-change ${nrpDiff>0?'increase':'decrease'}" style="margin-top:.25rem">
+NRP: ${nrpDiff>0?'+':''}₹${Math.abs(nrpDiff).toLocaleString('en-IN')} (${nrpDiff>0?'+':''}${nrpPercent}%)
+</div>`:
+`<div style="color:#6e6e73">NRP: No change</div>`}
 </td>
 </tr>
 `
@@ -460,76 +750,200 @@ ${isIncrease ? '+' : ''}${diff.toLocaleString('en-IN')} (${isIncrease ? '+' : ''
 </tbody>
 `
 
-// Show skipped section if any
-if(skipped.length > 0){
-document.getElementById('skippedSection').style.display = 'block'
-document.getElementById('skippedList').innerHTML = skipped.map(s => 
-`<div>• <strong>${s.model}</strong> - ${s.reason}</div>`
+if(skipped.length>0){
+document.getElementById('skippedSection').style.display='block'
+document.getElementById('skippedList').innerHTML=skipped.map(s=>
+`<div style="margin-bottom:.25rem">• <strong>${s.model}</strong> - ${s.reason}</div>`
 ).join('')
-} else {
-document.getElementById('skippedSection').style.display = 'none'
+}else{
+document.getElementById('skippedSection').style.display='none'
 }
 }
 
-function updateValue(index, value){
-parsedChanges[index].new_price = parseFloat(value)
-// Recalculate change percentage
-const c = parsedChanges[index]
-const diff = c.new_price - c.old_price
-const diffPercent = ((diff / c.old_price) * 100).toFixed(1)
-const isIncrease = diff > 0
+function updatePrice(input){
+const row=parseInt(input.dataset.row)
+const field=input.dataset.field
+const value=parseFloat(input.value)
 
-// Update row styling
-const row = event.target.closest('tr')
-row.className = isIncrease ? 'diff-up' : 'diff-down'
+if(field==='ideal'){
+parsedChanges[row].new_ideal_price=value
+}else{
+parsedChanges[row].new_nrp=value
+}
 
-// Update change cell
-const changeCell = row.querySelector('.price-change')
-changeCell.className = `price-change ${isIncrease ? 'increase' : 'decrease'}`
-changeCell.textContent = `${isIncrease ? '+' : ''}${diff.toLocaleString('en-IN')} (${isIncrease ? '+' : ''}${diffPercent}%)`
+const c=parsedChanges[row]
+const idealDiff=c.new_ideal_price-c.old_ideal_price
+const nrpDiff=c.new_nrp-c.old_nrp
+const idealPercent=((idealDiff/c.old_ideal_price)*100).toFixed(1)
+const nrpPercent=((nrpDiff/c.old_nrp)*100).toFixed(1)
+
+const hasIdealChange=idealDiff!==0
+const hasNrpChange=nrpDiff!==0
+
+const changeCell=document.getElementById(`change-${row}`)
+changeCell.innerHTML=`
+${hasIdealChange?
+`<div class="price-change ${idealDiff>0?'increase':'decrease'}">
+Ideal: ${idealDiff>0?'+':''}₹${Math.abs(idealDiff).toLocaleString('en-IN')} (${idealDiff>0?'+':''}${idealPercent}%)
+</div>`:
+`<div style="color:#6e6e73">Ideal: No change</div>`}
+
+${hasNrpChange?
+`<div class="price-change ${nrpDiff>0?'increase':'decrease'}" style="margin-top:.25rem">
+NRP: ${nrpDiff>0?'+':''}₹${Math.abs(nrpDiff).toLocaleString('en-IN')} (${nrpDiff>0?'+':''}${nrpPercent}%)
+</div>`:
+`<div style="color:#6e6e73">NRP: No change</div>`}
+`
+
+const rowEl=input.closest('tr')
+if(hasIdealChange||hasNrpChange){
+rowEl.className=idealDiff>0||nrpDiff>0?'diff-up':'diff-down'
+}else{
+rowEl.className=''
+}
 }
 
 function confirmBulk(){
-if(!confirm(`Apply price changes to ${parsedChanges.length} tanks?`)) return
+showConfirmModal()
+}
 
-fetch("{% url 'admin_bulk_price_update' %}", {
-method: 'POST',
-headers: {
-'X-CSRFToken': getCookie('csrftoken'),
-'Content-Type': 'application/json'
+function showConfirmModal(){
+const tanksCount=parsedChanges.length
+const totalIdealChange=parsedChanges.reduce((sum,c)=>sum+(c.new_ideal_price-c.old_ideal_price),0)
+const totalNrpChange=parsedChanges.reduce((sum,c)=>sum+(c.new_nrp-c.old_nrp),0)
+
+const modal=document.createElement('div')
+modal.className='confirm-modal show'
+modal.id='confirmModal'
+modal.innerHTML=`
+<div class="confirm-content">
+<div class="confirm-icon">
+<i class="ri-alert-line"></i>
+</div>
+<h3 class="confirm-title">Confirm Price Updates</h3>
+<p class="confirm-message">
+You are about to update prices for <strong>${tanksCount} tank${tanksCount>1?'s':''}</strong>. This action cannot be undone.
+</p>
+<div class="confirm-stats">
+<div class="confirm-stat-row">
+<span class="confirm-stat-label">Tanks to update:</span>
+<span class="confirm-stat-value">${tanksCount}</span>
+</div>
+<div class="confirm-stat-row">
+<span class="confirm-stat-label">Total Ideal Price change:</span>
+<span class="confirm-stat-value" style="color:${totalIdealChange>0?'#34C759':'#FF3B30'}">
+${totalIdealChange>0?'+':''}₹${Math.abs(totalIdealChange).toLocaleString('en-IN')}
+</span>
+</div>
+<div class="confirm-stat-row">
+<span class="confirm-stat-label">Total NRP change:</span>
+<span class="confirm-stat-value" style="color:${totalNrpChange>0?'#34C759':'#FF3B30'}">
+${totalNrpChange>0?'+':''}₹${Math.abs(totalNrpChange).toLocaleString('en-IN')}
+</span>
+</div>
+</div>
+<div class="confirm-actions">
+<button class="confirm-btn confirm-btn-cancel" onclick="closeConfirmModal()">
+Cancel
+</button>
+<button class="confirm-btn confirm-btn-confirm" onclick="applyChanges()" id="confirmApplyBtn">
+<i class="ri-check-line" style="margin-right:.5rem"></i>
+Apply Changes
+</button>
+</div>
+</div>
+`
+
+document.body.appendChild(modal)
+}
+
+function closeConfirmModal(){
+const modal=document.getElementById('confirmModal')
+if(modal){
+modal.classList.remove('show')
+setTimeout(()=>modal.remove(),300)
+}
+}
+
+function applyChanges(){
+const applyBtn=document.getElementById('confirmApplyBtn')
+applyBtn.classList.add('loading')
+applyBtn.innerHTML='<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;margin-right:.5rem"></i>Applying...'
+
+fetch("{% url 'admin_bulk_price_update' %}",{
+method:'POST',
+headers:{
+'X-CSRFToken':getCookie('csrftoken'),
+'Content-Type':'application/json'
 },
-body: JSON.stringify({changes: parsedChanges})
+body:JSON.stringify({changes:parsedChanges})
 })
-.then(res => res.json())
-.then(data => {
+.then(res=>res.json())
+.then(data=>{
+closeConfirmModal()
+
 if(data.success){
 closeModal()
-showToast(`✅ Successfully updated ${data.updated} tank prices`, 'success')
-setTimeout(() => location.reload(), 1500)
-} else {
-showToast(data.error, 'error')
+showSuccessModal(data.updated)
+}else{
+showToast(data.error,'error')
 }
 })
-.catch(err => {
-showToast('Failed to apply changes', 'error')
+.catch(err=>{
+closeConfirmModal()
+showToast('Failed to apply changes','error')
 })
+}
+
+function showSuccessModal(count){
+const modal=document.createElement('div')
+modal.className='success-modal show'
+modal.id='successModal'
+modal.innerHTML=`
+<div class="success-content">
+<div class="success-icon">
+<i class="ri-check-line"></i>
+</div>
+<h3 class="success-title">Success!</h3>
+<p class="success-message">
+Successfully updated prices for <strong>${count} tank${count>1?'s':''}</strong>.<br>
+All changes have been saved to the database.
+</p>
+<button class="success-btn" onclick="closeSuccessModal()">
+Done
+</button>
+</div>
+`
+
+document.body.appendChild(modal)
+}
+
+function closeSuccessModal(){
+const modal=document.getElementById('successModal')
+if(modal){
+modal.classList.remove('show')
+setTimeout(()=>{
+modal.remove()
+location.reload()
+},300)
+}
 }
 
 function closeModal(){
 document.getElementById('previewModal').classList.remove('show')
 }
 
-function showToast(message, type = 'success'){
-const toast = document.getElementById('toast')
-toast.textContent = message
-toast.className = `toast ${type} show`
-setTimeout(() => toast.classList.remove('show'), 3000)
+function showToast(message,type='success'){
+const toast=document.getElementById('toast')
+toast.textContent=message
+toast.className=`toast ${type} show`
+setTimeout(()=>toast.classList.remove('show'),3000)
 }
 
 function getCookie(name){
-let value = `; ${document.cookie}`
-let parts = value.split(`; ${name}=`)
-if(parts.length === 2) return parts.pop().split(';').shift()
+let value=`; ${document.cookie}`
+let parts=value.split(`; ${name}=`)
+if(parts.length===2) return parts.pop().split(';').shift()
 }
 </script>
 

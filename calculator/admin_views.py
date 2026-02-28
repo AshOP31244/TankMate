@@ -296,7 +296,7 @@ def admin_bulk_price(request):
 @staff_member_required
 @require_POST
 def admin_bulk_price_update(request):
-    """Handle bulk price update with preview/confirm flow"""
+    """Handle bulk price update with preview/confirm flow - supports ideal_price AND nrp"""
     import json
     
     # Check if this is a preview request (CSV upload) or confirm request (JSON data)
@@ -322,41 +322,91 @@ def admin_bulk_price_update(request):
             skipped = []
             
             for row_num, row in enumerate(reader, start=2):
-                model = row.get('model_number', '').strip()
-                new_price_str = row.get('new_price', '').strip()
+                # Try different column name variations for model
+                model = (
+                    row.get('model_number', '').strip() or 
+                    row.get('tank_model', '').strip() or
+                    row.get('model', '').strip()
+                )
                 
-                if not model or not new_price_str:
+                if not model:
                     skipped.append({
-                        'model': model or f'Row {row_num}',
-                        'reason': 'Missing data'
+                        'model': f'Row {row_num}',
+                        'reason': 'Missing model number'
+                    })
+                    continue
+                
+                # Try to get ideal_price
+                ideal_price_str = (
+                    row.get('ideal_price', '').strip() or
+                    row.get('new_price', '').strip() or
+                    row.get('price', '').strip()
+                )
+                
+                # Try to get nrp
+                nrp_str = row.get('nrp', '').strip()
+                
+                # At least one price must be provided
+                if not ideal_price_str and not nrp_str:
+                    skipped.append({
+                        'model': model,
+                        'reason': 'Missing price data (need ideal_price or nrp or both)'
                     })
                     continue
                 
                 try:
-                    new_price = float(new_price_str)
-                    
                     # Find tank in database
                     tank = Tank.objects.filter(model=model).first()
                     
                     if not tank:
                         skipped.append({
                             'model': model,
-                            'reason': 'Tank not found'
+                            'reason': 'Tank not found in database'
                         })
                         continue
                     
-                    # Create change object
-                    changes.append({
-                        'model': tank.model,
-                        'old_price': float(tank.ideal_price),
-                        'new_price': new_price,
-                        'tank_id': tank.id
-                    })
+                    # Parse prices
+                    new_ideal_price = None
+                    new_nrp = None
                     
-                except (ValueError, InvalidOperation):
+                    if ideal_price_str:
+                        ideal_price_str = ideal_price_str.replace('₹', '').replace(',', '').strip()
+                        new_ideal_price = float(ideal_price_str)
+                        if new_ideal_price <= 0:
+                            raise ValueError("Ideal price must be greater than 0")
+                    
+                    if nrp_str:
+                        nrp_str = nrp_str.replace('₹', '').replace(',', '').strip()
+                        new_nrp = float(nrp_str)
+                        if new_nrp <= 0:
+                            raise ValueError("NRP must be greater than 0")
+                    
+                    # Create change object
+                    change_data = {
+                        'model': tank.model,
+                        'tank_id': tank.id,
+                        'category': tank.category,
+                        'old_ideal_price': float(tank.ideal_price),
+                        'old_nrp': float(tank.nrp),
+                    }
+                    
+                    # Add new prices if provided
+                    if new_ideal_price is not None:
+                        change_data['new_ideal_price'] = new_ideal_price
+                    else:
+                        change_data['new_ideal_price'] = float(tank.ideal_price)  # Keep old
+                    
+                    if new_nrp is not None:
+                        change_data['new_nrp'] = new_nrp
+                    else:
+                        change_data['new_nrp'] = float(tank.nrp)  # Keep old
+                    
+                    changes.append(change_data)
+                    
+                except (ValueError, InvalidOperation) as e:
                     skipped.append({
                         'model': model,
-                        'reason': 'Invalid price format'
+                        'reason': f'Invalid price format: {str(e)}'
                     })
                 except Exception as e:
                     skipped.append({
@@ -403,17 +453,39 @@ def admin_bulk_price_update(request):
                     try:
                         tank_id = change.get('tank_id')
                         model = change.get('model')
-                        new_price = change.get('new_price')
+                        new_ideal_price = change.get('new_ideal_price')
+                        new_nrp = change.get('new_nrp')
                         
-                        if not tank_id or not new_price:
-                            errors.append(f"{model}: Missing data")
+                        if not tank_id:
+                            errors.append(f"{model}: Missing tank ID")
                             continue
                         
-                        # Get tank and update price
+                        # Validate prices
+                        if new_ideal_price and float(new_ideal_price) <= 0:
+                            errors.append(f"{model}: Ideal price must be greater than 0")
+                            continue
+                        
+                        if new_nrp and float(new_nrp) <= 0:
+                            errors.append(f"{model}: NRP must be greater than 0")
+                            continue
+                        
+                        # Get tank and update prices
                         tank = Tank.objects.get(id=tank_id)
-                        tank.ideal_price = Decimal(str(new_price))
-                        tank.save(update_fields=['ideal_price', 'updated_at'])
-                        updated_count += 1
+                        
+                        update_fields = []
+                        
+                        if new_ideal_price is not None:
+                            tank.ideal_price = Decimal(str(new_ideal_price))
+                            update_fields.append('ideal_price')
+                        
+                        if new_nrp is not None:
+                            tank.nrp = Decimal(str(new_nrp))
+                            update_fields.append('nrp')
+                        
+                        if update_fields:
+                            update_fields.append('updated_at')
+                            tank.save(update_fields=update_fields)
+                            updated_count += 1
                         
                     except Tank.DoesNotExist:
                         errors.append(f"{model}: Tank not found")
