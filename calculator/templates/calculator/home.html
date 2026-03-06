@@ -9,6 +9,283 @@
   <link rel="icon" type="image/x-icon" href="{% static 'calculator/icons/favicon.png' %}">
   <link rel="manifest" href="{% static 'calculator/manifest.json' %}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+
+  <style>
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Dropdown Trigger
+  ══════════════════════════════════════════════ */
+  .nexus-dropdown-wrapper { position: relative; }
+
+  .nexus-trigger {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 20px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .nexus-trigger:hover { border-color: #6366f1; color: #4f46e5; }
+
+  .nexus-trigger-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #d1d5db;
+    display: none;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .nexus-trigger.connected { border-color: #10b981; background: #f0fdf4; color: #065f46; }
+  .nexus-trigger.connected .nexus-trigger-dot { display: inline-block; background: #10b981; }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Dropdown Panel
+  ══════════════════════════════════════════════ */
+  .nexus-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 240px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+    z-index: 9999;
+    overflow: hidden;
+    animation: ndSlide 0.18s ease-out;
+  }
+  @keyframes ndSlide {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .nexus-dropdown-header { padding: 14px 16px 10px; border-bottom: 1px solid #f3f4f6; }
+  .nexus-dropdown-title  { display:block; font-size:13px; font-weight:700; color:#111827; }
+  .nexus-dropdown-sub    { display:block; font-size:11px; color:#9ca3af; margin-top:2px; }
+  .nexus-dropdown-list   { max-height:200px; overflow-y:auto; padding:6px 0; }
+
+  .nexus-dropdown-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 16px; font-size:13px; font-weight:500;
+    color:#374151; cursor:pointer; transition:background 0.15s;
+  }
+  .nexus-dropdown-item:hover { background:#f9fafb; }
+  .nexus-dropdown-item.active { background:#f0fdf4; color:#065f46; font-weight:700; }
+
+  .nd-avatar {
+    width:28px; height:28px; border-radius:50%;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    color:white; font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .nexus-dropdown-item.active .nd-avatar { background:linear-gradient(135deg,#10b981,#059669); }
+
+  .nd-check { margin-left:auto; color:#10b981; font-size:14px; display:none; }
+  .nexus-dropdown-item.active .nd-check { display:block; }
+
+  .nexus-dropdown-loading { display:flex; align-items:center; gap:10px; padding:16px; font-size:12px; color:#9ca3af; }
+
+  .nexus-spinner {
+    width:16px; height:16px;
+    border:2px solid #e5e7eb; border-top-color:#6366f1;
+    border-radius:50%; animation:spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .nexus-dropdown-footer { padding:10px 16px; border-top:1px solid #f3f4f6; }
+  .nexus-disconnect-btn {
+    width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px; border:1px solid #fecaca; background:#fff5f5; color:#ef4444;
+    border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+    font-family:inherit; transition:all 0.15s;
+  }
+  .nexus-disconnect-btn:hover { background:#ef4444; color:white; }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Export Button States
+  ══════════════════════════════════════════════ */
+  .cart-action-btn.secondary.nexus-ready {
+    border-color:#10b981; color:#065f46; background:#f0fdf4;
+  }
+  .cart-action-btn.secondary.nexus-ready:hover {
+    background:#10b981; color:white; border-color:#10b981;
+  }
+  .cart-action-btn.secondary.not-connected { opacity:0.6; }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Collection name duplicate check
+  ══════════════════════════════════════════════ */
+  #collectionModal .modal-content { max-width:420px; width:95%; }
+
+  .collection-name-check {
+    font-size:11px; margin-top:5px; min-height:16px;
+    padding-left:2px; transition:all 0.2s;
+  }
+  .collection-name-check.warning { color:#f59e0b; }
+  .collection-name-check.clear   { color:#10b981; }
+
+  #collectionNameSuggestions {
+    display:none; margin-top:10px;
+    background:#fffbeb; border:1px solid #fde68a;
+    border-radius:10px; padding:10px;
+  }
+  .cns-label {
+    font-size:11px; font-weight:600; color:#92400e;
+    margin-bottom:8px; display:flex; align-items:center; gap:4px;
+  }
+  .cns-card {
+    display:flex; align-items:center; justify-content:space-between;
+    background:white; border:1px solid #fde68a; border-radius:8px;
+    padding:8px 10px; margin-bottom:6px; cursor:pointer; transition:all 0.15s;
+  }
+  .cns-card:last-child { margin-bottom:0; }
+  .cns-card:hover { border-color:#f59e0b; background:#fffff0; }
+  .cns-card-info { display:flex; flex-direction:column; gap:2px; }
+  .cns-card-name { font-size:13px; font-weight:700; color:#111827; }
+  .cns-card-meta { font-size:10px; color:#9ca3af; }
+  .cns-import-btn {
+    display:flex; align-items:center; gap:4px;
+    padding:5px 10px; background:#f59e0b; color:white; border:none;
+    border-radius:6px; font-size:11px; font-weight:700;
+    font-family:inherit; white-space:nowrap; pointer-events:none;
+  }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — My Projects Modal items
+  ══════════════════════════════════════════════ */
+  .nexus-project-item {
+    background:#f9fafb; border:1px solid #e5e7eb;
+    border-radius:12px; padding:12px 14px; transition:all 0.15s;
+  }
+  .nexus-project-item:hover { border-color:#6366f1; background:#fafafe; }
+  .nexus-project-item-header {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+  }
+  .nexus-project-item-name { font-size:14px; font-weight:700; color:#111827; }
+  .nexus-project-item-meta { font-size:11px; color:#9ca3af; margin-top:2px; }
+  .nexus-project-import-btn {
+    display:flex; align-items:center; gap:4px;
+    padding:6px 12px; background:#6366f1; color:white; border:none;
+    border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;
+    font-family:inherit; white-space:nowrap; flex-shrink:0; transition:background 0.15s;
+  }
+  .nexus-project-import-btn:hover { background:#4f46e5; }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Premium Export Confirm Modal
+  ══════════════════════════════════════════════ */
+  .ecm-modal {
+    max-width:440px !important; width:95% !important;
+    padding:0 !important; overflow:hidden;
+  }
+  .ecm-header {
+    display:flex; align-items:center; gap:12px;
+    padding:20px 20px 16px; border-bottom:1px solid #f3f4f6;
+  }
+  .ecm-header-icon {
+    width:40px; height:40px; border-radius:12px;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    color:white; display:flex; align-items:center;
+    justify-content:center; font-size:18px; flex-shrink:0;
+  }
+  .ecm-title  { font-size:16px; font-weight:700; color:#111827; margin:0 0 2px; }
+  .ecm-subtitle { font-size:12px; color:#9ca3af; margin:0; }
+  .ecm-close {
+    margin-left:auto; width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    background:#f3f4f6; border:none; border-radius:8px;
+    cursor:pointer; font-size:18px; color:#6b7280; flex-shrink:0; transition:all 0.15s;
+  }
+  .ecm-close:hover { background:#ef4444; color:white; }
+
+  .ecm-meta-row {
+    display:flex; align-items:center;
+    padding:14px 20px; background:#f9fafb;
+    border-bottom:1px solid #f3f4f6; gap:0;
+  }
+  .ecm-meta-item { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .ecm-meta-label {
+    font-size:10px; font-weight:600; text-transform:uppercase;
+    letter-spacing:0.05em; color:#9ca3af;
+  }
+  .ecm-meta-value { font-size:14px; font-weight:700; color:#111827; }
+  .ecm-meta-divider { width:1px; height:36px; background:#e5e7eb; margin:0 16px; }
+
+  .ecm-stats {
+    display:grid; grid-template-columns:repeat(3,1fr);
+    padding:14px 20px; border-bottom:1px solid #f3f4f6; gap:8px;
+  }
+  .ecm-stat {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:10px 8px; background:#f9fafb; border-radius:10px;
+  }
+  .ecm-stat-val { font-size:14px; font-weight:800; color:#111827; text-align:center; line-height:1.2; }
+  .ecm-stat-lbl {
+    font-size:10px; color:#9ca3af; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+
+  .ecm-tanks-scroll {
+    max-height:220px; overflow-y:auto;
+    padding:10px 20px; border-bottom:1px solid #f3f4f6;
+  }
+  .ecm-tank-row {
+    display:flex; align-items:center; gap:10px;
+    padding:8px 0; border-bottom:1px solid #f9fafb;
+  }
+  .ecm-tank-row:last-child { border-bottom:none; }
+  .ecm-tank-num {
+    width:22px; height:22px; border-radius:50%;
+    background:#6366f1; color:white; font-size:10px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .ecm-tank-info { flex:1; display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .ecm-tank-model {
+    font-size:13px; font-weight:700; color:#111827;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ecm-tank-spec { font-size:11px; color:#9ca3af; }
+  .ecm-tank-badge {
+    font-size:9px; font-weight:700; padding:3px 7px;
+    border-radius:4px; text-transform:uppercase; flex-shrink:0;
+  }
+  .ecm-badge-rct { background:#f1f5f9; color:#334155; }
+  .ecm-badge-sst { background:#e0f2fe; color:#0369a1; }
+  .ecm-badge-sfm { background:#fee2e2; color:#b91c1c; }
+  .ecm-badge-gfs { background:#d1fae5; color:#065f46; }
+
+  .ecm-actions { display:flex; gap:10px; padding:16px 20px; }
+  .ecm-actions .btn { flex:1; }
+  .ecm-confirm-btn {
+    background:linear-gradient(135deg,#6366f1,#4f46e5);
+    color:white; border:none;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    box-shadow:0 4px 14px rgba(99,102,241,0.35); transition:all 0.2s;
+  }
+  .ecm-confirm-btn:hover {
+    background:linear-gradient(135deg,#4f46e5,#4338ca);
+    transform:translateY(-1px);
+    box-shadow:0 6px 20px rgba(99,102,241,0.4);
+  }
+
+  /* ══════════════════════════════════════════════
+     NEXUS — Duplicate Warning Modal
+  ══════════════════════════════════════════════ */
+  .ndm-match-card {
+    background:#fffbeb; border:1px solid #fde68a;
+    border-radius:10px; padding:10px 12px;
+  }
+  .ndm-match-name { font-weight:700; font-size:13px; }
+  .ndm-match-meta { font-size:11px; color:#92400e; margin-top:2px; }
+
+  </style>
 </head>
 <body>
 
@@ -21,8 +298,36 @@
         <div class="brand-text">
           <h1 class="brand-title">TankMate</h1>
         </div>
-        <!-- Collections Dropdown & Cart Badge -->
+
         <div class="header-actions">
+
+          <!-- Nexus Identity Pill -->
+          <div class="nexus-dropdown-wrapper" id="nexusDropdownWrapper">
+            <button class="nexus-trigger" id="nexusTrigger" onclick="toggleNexusDropdown()">
+              <span class="nexus-trigger-dot" id="nexusTriggerDot"></span>
+              <span id="nexusTriggerLabel">Nexus</span>
+              <i class="ri-arrow-down-s-line" id="nexusTriggerArrow"></i>
+            </button>
+
+            <div class="nexus-dropdown" id="nexusDropdown" style="display:none;">
+              <div class="nexus-dropdown-header">
+                <span class="nexus-dropdown-title">Who are you?</span>
+                <span class="nexus-dropdown-sub">Select your identity</span>
+              </div>
+              <div class="nexus-dropdown-list" id="nexusDropdownList">
+                <div class="nexus-dropdown-loading">
+                  <div class="nexus-spinner"></div>
+                  <span>Loading...</span>
+                </div>
+              </div>
+              <div class="nexus-dropdown-footer" id="nexusDropdownFooter" style="display:none;">
+                <button class="nexus-disconnect-btn" onclick="NexusSession.clear()">
+                  <i class="ri-logout-box-line"></i> Disconnect
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Collections Dropdown -->
           <div class="collections-dropdown">
             <button class="collections-toggle" onclick="toggleCollectionsDropdown()">
@@ -30,56 +335,56 @@
               <span id="activeCollectionName">My Selection</span>
               <i class="ri-arrow-down-s-line"></i>
             </button>
-            
-            <div id="collectionsMenu" class="collections-menu" style="display: none;">
-              <div class="collections-list" id="collectionsList">
-                <!-- Populated by JavaScript -->
-              </div>
+
+            <div id="collectionsMenu" class="collections-menu" style="display:none;">
+              <div class="collections-list" id="collectionsList"></div>
               <div class="collections-menu-actions">
+                <button id="myProjectsBtn" onclick="openNexusProjects()"
+                        class="collection-action-btn"
+                        style="display:none; background:#6366f1; margin-bottom:8px;">
+                  <i class="ri-history-line"></i>
+                  My Nexus Projects
+                </button>
                 <button onclick="createNewCollection()" class="collection-action-btn">
                   <i class="ri-add-line"></i>
-                  New Collection
+                  New Client
                 </button>
               </div>
             </div>
           </div>
-          
+
           <!-- Cart Badge -->
           <button class="cart-badge" onclick="toggleCartSidebar()">
             <i class="ri-shopping-cart-2-line"></i>
             <span id="cartCount" class="cart-count">0</span>
           </button>
+
         </div>
       </div>
     </div>
   </header>
 
   <main class="main-content">
-    
-    <!-- Step 1: Tank Category Selection (5 Cards) -->
+
+    <!-- Step 1: Tank Category Selection -->
     <section id="tankTypeSelection" class="tank-type-section">
       <div class="section-header">
         <h2 class="section-title">Find Your Tank</h2>
         <p class="section-description">Select a category or search across all tanks</p>
       </div>
-      
+
       <div class="tank-cards">
-        
-        <!-- NEW: Universal Search Card -->
+
         <div class="tank-card universal-card" data-category="ALL" onclick="selectCategory('ALL')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/photo-collage.webp' %}')"></div>
+            <div class="card-image" style="background-image:url('{% static 'calculator/icons/photo-collage.webp' %}')"></div>
             <span class="card-badge universal-badge">ALL</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
-              <h3 class="card-title" style="color: #f46767;">Universal Search</h3>
-              <div class="card-type-indicator universal-type">
-                {% comment %} <span class="type-dot"></span>
-                <span class="type-label">All Categories</span> {% endcomment %}
-              </div>
+              <h3 class="card-title" style="color:#f46767;">Universal Search</h3>
+              <div class="card-type-indicator universal-type"></div>
             </div>
-            {% comment %} <p class="card-description">Search across all tank categories and compare options</p> {% endcomment %}
             <div class="card-footer">
               <div class="capacity-info">
                 <span class="capacity-label">Total Tanks</span>
@@ -95,16 +400,13 @@
           </div>
         </div>
 
-        <!-- RCT Card -->
         <div class="tank-card" data-category="RCT" onclick="selectCategory('RCT')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/rct.webp' %}')"></div>
+            <div class="card-image" style="background-image:url('{% static 'calculator/icons/rct.webp' %}')"></div>
             <span class="card-badge rct-badge">RCT</span>
           </div>
           <div class="tank-card-content">
-            <div class="card-header">
-              <h3 class="card-title">Rhino Commercial Tanks</h3>
-            </div>
+            <div class="card-header"><h3 class="card-title">Rhino Commercial Tanks</h3></div>
             <div class="card-footer">
               <div class="capacity-info">
                 <span class="capacity-label">Capacity Range</span>
@@ -120,17 +422,15 @@
           </div>
         </div>
 
-        <!-- SST Card -->
         <div class="tank-card" data-category="SST" onclick="selectCategory('SST')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/sst.webp' %}')"></div>
+            <div class="card-image" style="background-image:url('{% static 'calculator/icons/sst.webp' %}')"></div>
             <span class="card-badge sst-badge">SST</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
               <h3 class="card-title">SecureStore Tanks</h3>
-              <div class="card-type-indicator sst-type">
-              </div>
+              <div class="card-type-indicator sst-type"></div>
             </div>
             <div class="card-footer">
               <div class="capacity-info">
@@ -147,17 +447,15 @@
           </div>
         </div>
 
-        <!-- SFM Card -->
         <div class="tank-card" data-category="SFM" onclick="selectCategory('SFM')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/fm.webp' %}')"></div>
+            <div class="card-image" style="background-image:url('{% static 'calculator/icons/fm.webp' %}')"></div>
             <span class="card-badge fm-badge">SFM</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
               <h3 class="card-title">Factory Mutual Tanks</h3>
-              <div class="card-type-indicator fm-type">                
-              </div>
+              <div class="card-type-indicator fm-type"></div>
             </div>
             <div class="card-footer">
               <div class="capacity-info">
@@ -174,17 +472,15 @@
           </div>
         </div>
 
-        <!-- NEW: GFS Card -->
         <div class="tank-card" data-category="GFS" onclick="selectCategory('GFS')">
           <div class="tank-card-visual">
-            <div class="card-image" style="background-image: url('{% static 'calculator/icons/gfs.webp' %}')"></div>
+            <div class="card-image" style="background-image:url('{% static 'calculator/icons/gfs.webp' %}')"></div>
             <span class="card-badge gfs-badge">GFS</span>
           </div>
           <div class="tank-card-content">
             <div class="card-header">
               <h3 class="card-title">Glass Fused Tanks</h3>
-              <div class="card-type-indicator gfs-type">
-              </div>
+              <div class="card-type-indicator gfs-type"></div>
             </div>
             <div class="card-footer">
               <div class="capacity-info">
@@ -204,9 +500,9 @@
       </div>
     </section>
 
-    <!-- Step 2: Search Interface (Hidden initially) -->
-    <section id="searchInterface" class="search-section" style="display: none;">
-      
+    <!-- Step 2: Search Interface -->
+    <section id="searchInterface" class="search-section" style="display:none;">
+
       <div class="search-header">
         <button class="back-button" onclick="changeCategory()">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -214,7 +510,7 @@
           </svg>
           <span>Change Category</span>
         </button>
-        
+
         <div class="selected-tank-pill">
           <div class="pill-icon">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -239,43 +535,27 @@
         <p class="form-subtitle">Enter any combination of parameters below</p>
 
         <form id="tankSearchForm" onsubmit="handleSearch(event)">
-          
           <div class="form-fields">
-            
-            <!-- Capacity Input -->
+
             <div class="form-field">
               <label for="capacityInput" class="field-label">
-                Capacity
-                <span class="optional-badge">Optional</span>
+                Capacity <span class="optional-badge">Optional</span>
               </label>
               <div class="input-wrapper">
-                <input 
-                  type="number" 
-                  id="capacityInput" 
-                  class="field-input"
-                  placeholder="e.g., 100"
-                  step="0.01"
-                  min="0"
-                >
+                <input type="number" id="capacityInput" class="field-input"
+                       placeholder="e.g., 100" step="0.01" min="0">
                 <span class="input-unit">KL</span>
               </div>
             </div>
 
-            <!-- Model Input with Autocomplete -->
             <div class="form-field autocomplete-field">
               <label for="modelInput" class="field-label">
-                Tank Model
-                <span class="optional-badge">Optional</span>
+                Tank Model <span class="optional-badge">Optional</span>
               </label>
               <div class="input-wrapper">
-                <input 
-                  type="text" 
-                  id="modelInput" 
-                  class="field-input"
-                  placeholder="Type to search models..."
-                  autocomplete="off"
-                  spellcheck="false"
-                >
+                <input type="text" id="modelInput" class="field-input"
+                       placeholder="Type to search models..."
+                       autocomplete="off" spellcheck="false">
                 <span class="input-icon">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
@@ -287,91 +567,54 @@
               <div id="modelResultsCount" class="field-hint"></div>
             </div>
 
-            <!-- Dimensions Row -->
             <div class="form-field-row">
               <div class="form-field">
                 <label for="diameterInput" class="field-label">
-                  Diameter
-                  <span class="optional-badge">Optional</span>
+                  Diameter <span class="optional-badge">Optional</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    type="number" 
-                    id="diameterInput" 
-                    class="field-input"
-                    placeholder="e.g., 7.8"
-                    step="any"
-                    inputmode="decimal"
-                    min="0"
-                  >
+                  <input type="number" id="diameterInput" class="field-input"
+                         placeholder="e.g., 7.8" step="any" inputmode="decimal" min="0">
                   <span class="input-unit">m</span>
                 </div>
               </div>
-
               <div class="form-field">
                 <label for="heightInput" class="field-label">
-                  Height
-                  <span class="optional-badge">Optional</span>
+                  Height <span class="optional-badge">Optional</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    type="number" 
-                    id="heightInput" 
-                    class="field-input"
-                    placeholder="e.g., 3.6"
-                    step="any"
-                    inputmode="decimal"
-                    min="0"
-                  >
+                  <input type="number" id="heightInput" class="field-input"
+                         placeholder="e.g., 3.6" step="any" inputmode="decimal" min="0">
                   <span class="input-unit">m</span>
                 </div>
               </div>
             </div>
 
-            <!-- NEW: Price Range Filter (Only for Universal Search) -->
-            <div id="priceFilterSection" class="form-field-row" style="display: none;">
+            <div id="priceFilterSection" class="form-field-row" style="display:none;">
               <div class="form-field">
                 <label for="minPriceInput" class="field-label">
-                  Min Price
-                  <span class="optional-badge">Optional</span>
+                  Min Price <span class="optional-badge">Optional</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    type="number" 
-                    id="minPriceInput" 
-                    class="field-input"
-                    placeholder="e.g., 100000"
-                    step="1000"
-                    min="0"
-                  >
+                  <input type="number" id="minPriceInput" class="field-input"
+                         placeholder="e.g., 100000" step="1000" min="0">
                   <span class="input-unit">₹</span>
                 </div>
               </div>
-
               <div class="form-field">
                 <label for="maxPriceInput" class="field-label">
-                  Max Price
-                  <span class="optional-badge">Optional</span>
+                  Max Price <span class="optional-badge">Optional</span>
                 </label>
                 <div class="input-wrapper">
-                  <input 
-                    type="number" 
-                    id="maxPriceInput" 
-                    class="field-input"
-                    placeholder="e.g., 500000"
-                    step="1000"
-                    min="0"
-                  >
+                  <input type="number" id="maxPriceInput" class="field-input"
+                         placeholder="e.g., 500000" step="1000" min="0">
                   <span class="input-unit">₹</span>
                 </div>
               </div>
             </div>
 
-            <!-- NEW: Sort Options -->
             <div class="form-field">
-              <label for="sortBySelect" class="field-label">
-                Sort Results By
-              </label>
+              <label for="sortBySelect" class="field-label">Sort Results By</label>
               <select id="sortBySelect" class="field-input">
                 <option value="capacity">Capacity (Low to High)</option>
                 <option value="price_asc">Price (Low to High)</option>
@@ -388,13 +631,10 @@
             </svg>
             <span>Search Tanks</span>
           </button>
-
         </form>
 
         <div id="volumeInfo" class="volume-info"></div>
-
       </div>
-
     </section>
 
     <!-- Results Section -->
@@ -411,12 +651,12 @@
     </div>
   </footer>
 
-  <!-- Cart Sidebar -->
+  <!-- ════════════════════════════════════════════
+       CART SIDEBAR
+  ════════════════════════════════════════════ -->
   <div id="cartSidebar" class="cart-sidebar">
     <div class="cart-sidebar-overlay" onclick="toggleCartSidebar()"></div>
-    
     <div class="cart-sidebar-content">
-      <!-- Header -->
       <div class="cart-header">
         <div class="cart-header-title">
           <i class="ri-shopping-cart-2-line"></i>
@@ -426,8 +666,6 @@
           <i class="ri-close-line"></i>
         </button>
       </div>
-      
-      <!-- Stats -->
       <div class="cart-stats" id="cartStats">
         <div class="cart-stat">
           <span class="cart-stat-label">Tanks</span>
@@ -442,20 +680,14 @@
           <span class="cart-stat-value" id="cartStatPrice">₹0</span>
         </div>
       </div>
-      
-      <!-- Tanks List -->
-      <div class="cart-items" id="cartItems">
-        <!-- Populated by JavaScript -->
-      </div>
-      
-      <!-- Actions -->
+      <div class="cart-items" id="cartItems"></div>
       <div class="cart-actions">
         <button onclick="copyCollection('text')" class="cart-action-btn primary">
           <i class="ri-file-copy-line"></i>
           Copy as Text
         </button>
-        <button onclick="copyCollection('json')" class="cart-action-btn secondary">
-          <i class="ri-code-s-slash-line"></i>
+        <button onclick="exportToNexus()" class="cart-action-btn secondary" id="nexusExportBtn">
+          <i class="ri-send-plane-line"></i>
           Export TO NEXUS
         </button>
         <button onclick="shareCollection()" class="cart-action-btn secondary">
@@ -469,10 +701,21 @@
       </div>
     </div>
   </div>
+
+  <!-- ════════════════════════════════════════════
+       MODALS
+  ════════════════════════════════════════════ -->
+
+  <!-- 1. New Client / Collection -->
   <div id="collectionModal" class="custom-modal">
     <div class="modal-content">
-      <h3>Create New Collection</h3>
-      <input type="text" id="collectionNameInput" placeholder="Collection name" />
+      <h3>New Client / Collection</h3>
+      <input type="text"
+             id="collectionNameInput"
+             placeholder="e.g. Mumbai Project"
+             oninput="checkCollectionNameDuplicate(this.value)" />
+      <div class="collection-name-check" id="collectionNameCheck"></div>
+      <div id="collectionNameSuggestions"></div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeCollectionModal()">Cancel</button>
         <button class="btn btn-primary" onclick="confirmCreateCollection()">Create</button>
@@ -480,6 +723,7 @@
     </div>
   </div>
 
+  <!-- 2. Clear Collection Confirm -->
   <div id="confirmModal" class="custom-modal">
     <div class="modal-content">
       <h3>Clear Collection?</h3>
@@ -490,6 +734,117 @@
       </div>
     </div>
   </div>
+
+  <!-- 3. Premium Export Confirmation -->
+  <div id="nexusExportConfirmModal" class="custom-modal">
+    <div class="modal-content ecm-modal">
+      <div class="ecm-header">
+        <div class="ecm-header-icon"><i class="ri-send-plane-fill"></i></div>
+        <div>
+          <h3 class="ecm-title">Export to Nexus</h3>
+          <p class="ecm-subtitle">Review before sending</p>
+        </div>
+        <button class="ecm-close" onclick="closeExportConfirmModal()">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="ecm-meta-row">
+        <div class="ecm-meta-item">
+          <span class="ecm-meta-label">Client</span>
+          <span class="ecm-meta-value" id="ecm-client-name">—</span>
+        </div>
+        <div class="ecm-meta-divider"></div>
+        <div class="ecm-meta-item">
+          <span class="ecm-meta-label">Salesperson</span>
+          <span class="ecm-meta-value" id="ecm-sales-person">—</span>
+        </div>
+      </div>
+      <div class="ecm-stats">
+        <div class="ecm-stat">
+          <span class="ecm-stat-val" id="ecm-tank-count">—</span>
+          <span class="ecm-stat-lbl">Tanks</span>
+        </div>
+        <div class="ecm-stat">
+          <span class="ecm-stat-val" id="ecm-capacity">—</span>
+          <span class="ecm-stat-lbl">Capacity</span>
+        </div>
+        <div class="ecm-stat">
+          <span class="ecm-stat-val" id="ecm-total-price">—</span>
+          <span class="ecm-stat-lbl">Total Value</span>
+        </div>
+      </div>
+      <div class="ecm-tanks-scroll">
+        <div id="ecm-tanks-list"></div>
+      </div>
+      <div class="ecm-actions">
+        <button class="btn btn-secondary" onclick="closeExportConfirmModal()">Cancel</button>
+        <button class="btn ecm-confirm-btn" onclick="confirmExportToNexus()">
+          <i class="ri-send-plane-fill"></i> Confirm Export
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Import Overwrite (replaces browser confirm) -->
+  <div id="importOverwriteModal" class="custom-modal">
+    <div class="modal-content" style="max-width:380px;">
+      <div style="font-size:32px;text-align:center;margin-bottom:8px;">📥</div>
+      <h3 style="text-align:center;margin-bottom:6px;">Collection Already Exists</h3>
+      <p style="text-align:center;font-size:13px;color:#6b7280;margin-bottom:16px;">
+        "<span id="iom-name"></span>" already has <span id="iom-count"></span> locally.
+        What would you like to do?
+      </p>
+      <div class="modal-actions" style="flex-direction:column;gap:8px;">
+        <button class="btn ecm-confirm-btn" onclick="confirmImportOverwrite()" style="width:100%;">
+          <i class="ri-refresh-line"></i> Overwrite with Nexus version
+        </button>
+        <button class="btn btn-secondary" onclick="importAsNewCollection()" style="width:100%;">
+          <i class="ri-add-line"></i> Import as new collection
+        </button>
+        <button class="btn btn-secondary" onclick="closeImportOverwriteModal()" style="width:100%;color:#9ca3af;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. My Nexus Projects -->
+  <div id="nexusProjectsModal" class="custom-modal">
+    <div class="modal-content" style="max-width:480px;width:95%;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="margin:0;font-size:17px;">
+          <i class="ri-history-line" style="color:#6366f1;"></i> My Projects
+        </h3>
+        <button onclick="closeNexusProjectsModal()"
+                style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;">✕</button>
+      </div>
+      <p id="nexusProjectsSubtitle" style="font-size:12px;color:#9ca3af;margin:-8px 0 16px;">
+        Your past exports — click to import into TankMate
+      </p>
+      <div id="nexusProjectsList"
+           style="max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+        <div style="text-align:center;padding:24px;color:#9ca3af;">
+          <div class="nexus-spinner" style="margin:0 auto 8px;"></div>
+          Loading...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Nexus Duplicate Warning (DB match found while typing) -->
+  <div id="nexusDuplicateModal" class="custom-modal">
+    <div class="modal-content" style="max-width:400px;width:95%;">
+      <div style="font-size:32px;text-align:center;margin-bottom:8px;">⚠️</div>
+      <h3 style="text-align:center;margin-bottom:8px;" id="ndmTitle">Project Already Exists</h3>
+      <p style="text-align:center;font-size:13px;color:#6b7280;" id="ndmMsg"></p>
+      <div id="ndmMatches" style="margin:12px 0;display:flex;flex-direction:column;gap:8px;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeNexusDuplicateModal()">Create Anyway</button>
+        <button class="btn btn-primary" onclick="importAndCloseDuplicateModal()">Import Existing</button>
+      </div>
+    </div>
+  </div>
+
   <script src="{% static 'calculator/js/app.js' %}"></script>
 </body>
 </html>

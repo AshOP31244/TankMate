@@ -137,7 +137,7 @@ body {
 .header-wrapper {
   max-width: var(--max-width-lg);
   margin: 0 auto;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-lg);
 }
 
 .header-brand {
