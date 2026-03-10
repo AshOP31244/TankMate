@@ -14,6 +14,7 @@ urlpatterns = [
     path("api/stats/",    views.get_category_stats,  name="get_stats"),
     path("api/nexus/projects/",  views.get_nexus_projects,    name="nexus_projects"),
     path("api/nexus/check/",     views.check_nexus_duplicate,  name="nexus_check"),
+    
 
     # ── Nexus integration ─────────────────────────────────────────────────
     path("api/nexus/users/",  views.get_nexus_users,  name="nexus_users"),

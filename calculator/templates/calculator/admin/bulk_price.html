@@ -10,16 +10,36 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7}
 
+/* Dashboard Navbar Theme */
+
 header{
-background:white;
-padding:1.2rem 2rem;
-border-bottom:1px solid #e5e5ea;
+background: rgba(255,255,255,0.75);
+backdrop-filter: saturate(180%) blur(20px);
+-webkit-backdrop-filter: saturate(180%) blur(20px);
+border-bottom:1px solid rgba(0,0,0,0.05);
+padding:1rem 2rem;
 display:flex;
 justify-content:space-between;
 align-items:center;
+position:sticky;
+top:0;
+z-index:100;
 }
 
-header h1{font-size:1.4rem;font-weight:600}
+header h1{
+font-size:1.35rem;
+font-weight:600;
+letter-spacing:-0.02em;
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+header div{
+display:flex;
+gap:.75rem;
+align-items:center;
+}
 
 .dashboard-link_name{
 padding:.6rem 1rem;
@@ -32,18 +52,30 @@ transition:.2s ease;
 }
 
 .dashboard-link{
-padding:.6rem 1rem;
-background:#111;
-color:white;
+display:inline-flex;
+align-items:center;
+gap:6px;
+padding:.5rem 1rem;
+background:#e8e8ed;
+color:#1d1d1f;
 text-decoration:none;
-border-radius:10px;
+border-radius:12px;
 font-size:.85rem;
-transition:.2s ease;
+font-weight:500;
+transition:.25s;
 }
 
-.dashboard-link:hover{background:#000;transform:translateY(-1px)}
+.dashboard-link:hover{
+background:rgba(0,122,255,0.1);
+color:#007AFF;
+transform:scale(1.02);
+}
 
-.container{max-width:1000px;margin:3rem auto;padding:0 1rem}
+.container{
+max-width:1200px;
+margin:2.5rem auto;
+padding:0 1.5rem;
+}
 
 .upload-card{
 background:white;

@@ -5,6 +5,19 @@
   <meta charset="UTF-8">
   <title>TankMate - Smart Tank Selection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+
+  <!-- iOS Web App -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TankMate">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#007AFF">
+
+  <!-- Touch Icons -->
+  <link rel="apple-touch-icon" href="{% static 'calculator/icons/header_icon.webp' %}">
   <link rel="stylesheet" href="{% static 'calculator/css/style.css' %}">
   <link rel="icon" type="image/x-icon" href="{% static 'calculator/icons/favicon.png' %}">
   <link rel="manifest" href="{% static 'calculator/manifest.json' %}">
@@ -370,7 +383,6 @@
     <section id="tankTypeSelection" class="tank-type-section">
       <div class="section-header">
         <h2 class="section-title">Find Your Tank</h2>
-        <p class="section-description">Select a category or search across all tanks</p>
       </div>
 
       <div class="tank-cards">
@@ -690,10 +702,10 @@
           <i class="ri-send-plane-line"></i>
           Export TO NEXUS
         </button>
-        <button onclick="shareCollection()" class="cart-action-btn secondary">
+        {% comment %} <button onclick="shareCollection()" class="cart-action-btn secondary">
           <i class="ri-share-line"></i>
           Share
-        </button>
+        </button> {% endcomment %}
         <button onclick="clearActiveCollection()" class="cart-action-btn danger">
           <i class="ri-delete-bin-line"></i>
           Clear All

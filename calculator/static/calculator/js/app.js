@@ -1,6 +1,21 @@
-// ============================================
-// TankMate - app.js (Complete)
-// ============================================
+function showToast(message, type = 'default', duration = 3000) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast${type !== 'default' ? ' ' + type : ''}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.25s ease forwards';
+    setTimeout(() => toast.remove(), 250);
+  }, duration);
+}
 
 const CATEGORY_CONFIG = {
   RCT: { code: "RCT", name: "Rhino Commercial Tank", short: "RCT", unit: "KL" },
@@ -182,6 +197,9 @@ document.addEventListener('DOMContentLoaded', function () {
   setupGlobalListeners();
   updateCartUI();
   NexusSession.init();
+  
+  // CRITICAL: Setup cart sidebar close handlers
+  setupCartSidebarHandlers();
 
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('collectionsMenu');
@@ -193,6 +211,246 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ============================================
+// CRITICAL FIX: Cart Sidebar Handlers
+// ============================================
+function setupCartSidebarHandlers() {
+  const overlay = document.querySelector('.cart-sidebar-overlay');
+  const closeBtn = document.querySelector('.cart-close-btn');
+  
+  // Overlay click to close
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      closeCartSidebar();
+    });
+    
+    // Touch event for mobile
+    overlay.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeCartSidebar();
+    });
+  }
+  
+  // Close button
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeCartSidebar();
+    });
+  }
+  
+  // Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const sidebar = document.getElementById('cartSidebar');
+      if (sidebar && sidebar.classList.contains('open')) {
+        closeCartSidebar();
+      }
+    }
+  });
+  
+  // Setup swipe-to-close
+  setupSwipeToClose();
+}
+
+// ============================================
+// SWIPE-TO-CLOSE GESTURE (iOS-like)
+// ============================================
+let touchStartX = 0;
+let touchStartY = 0;
+let isDragging = false;
+
+function setupSwipeToClose() {
+  const header = document.querySelector('.cart-header');
+  if (!header) return;
+  
+  header.addEventListener('touchstart', handleTouchStart, { passive: true });
+  header.addEventListener('touchmove', handleTouchMove, { passive: false });
+  header.addEventListener('touchend', handleTouchEnd, { passive: true });
+}
+
+function handleTouchStart(e) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  isDragging = false;
+}
+
+function handleTouchMove(e) {
+  if (!touchStartX) return;
+  
+  const touchX = e.touches[0].clientX;
+  const touchY = e.touches[0].clientY;
+  const diffX = touchX - touchStartX;
+  const diffY = touchY - touchStartY;
+  
+  // Detect right swipe (close gesture)
+  if (Math.abs(diffX) > Math.abs(diffY) && diffX > 50) {
+    isDragging = true;
+    e.preventDefault();
+    
+    // Visual feedback
+    const content = document.querySelector('.cart-sidebar-content');
+    if (content) {
+      content.style.transform = `translateX(${Math.max(0, diffX)}px)`;
+      content.style.transition = 'none';
+    }
+  }
+}
+
+function handleTouchEnd(e) {
+  const content = document.querySelector('.cart-sidebar-content');
+  
+  if (isDragging && content) {
+    const touchX = e.changedTouches[0].clientX;
+    const diffX = touchX - touchStartX;
+    
+    // If swiped more than 100px, close
+    if (diffX > 100) {
+      closeCartSidebar();
+    } else {
+      // Reset position
+      content.style.transition = '';
+      content.style.transform = '';
+    }
+  }
+  
+  touchStartX = 0;
+  touchStartY = 0;
+  isDragging = false;
+}
+
+// ============================================
+// Cart Sidebar Toggle (FIXED)
+// ============================================
+function toggleCartSidebar() {
+  const sidebar = document.getElementById('cartSidebar');
+  if (!sidebar) return;
+  sidebar.classList.toggle('open');
+  // Prevent body scroll when sidebar open
+  document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+// Close sidebar when overlay is clicked (already handled by onclick in HTML,
+// but this ensures it works with the new class system)
+document.addEventListener('DOMContentLoaded', function() {
+  const overlay = document.querySelector('.cart-sidebar-overlay');
+  if (overlay) {
+    overlay.onclick = function() {
+      const sidebar = document.getElementById('cartSidebar');
+      if (sidebar) {
+        sidebar.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    };
+  }
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', function(e) {
+    const nexusWrapper = document.getElementById('nexusDropdownWrapper');
+    const nexusDropdown = document.getElementById('nexusDropdown');
+    if (nexusDropdown && nexusWrapper && !nexusWrapper.contains(e.target)) {
+      nexusDropdown.style.display = 'none';
+    }
+
+    const collectionsMenu = document.getElementById('collectionsMenu');
+    const collectionsToggleEl = document.querySelector('.collections-toggle');
+    if (collectionsMenu && collectionsToggleEl &&
+        !collectionsToggleEl.closest('.collections-dropdown').contains(e.target)) {
+      collectionsMenu.style.display = 'none';
+    }
+  });
+
+  // Cart count badge — hide when 0
+  const cartCount = document.getElementById('cartCount');
+  if (cartCount) {
+    const observer = new MutationObserver(function() {
+      cartCount.style.display = cartCount.textContent.trim() === '0' || 
+                                 cartCount.textContent.trim() === '' ? 'none' : 'flex';
+    });
+    observer.observe(cartCount, { childList: true, characterData: true, subtree: true });
+    // Initial check
+    cartCount.style.display = cartCount.textContent.trim() === '0' ? 'none' : 'flex';
+  }
+
+  // Prevent modals from closing when clicking modal content
+  document.querySelectorAll('.custom-modal').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        // Click on backdrop — find close function
+        const id = modal.id;
+        const closeFnMap = {
+          collectionModal:         'closeCollectionModal',
+          confirmModal:            'closeConfirmModal',
+          nexusExportConfirmModal: 'closeExportConfirmModal',
+          importOverwriteModal:    'closeImportOverwriteModal',
+          nexusProjectsModal:      'closeNexusProjectsModal',
+          nexusDuplicateModal:     'closeNexusDuplicateModal',
+        };
+        const fn = closeFnMap[id];
+        if (fn && typeof window[fn] === 'function') {
+          window[fn]();
+        }
+      }
+    });
+  });
+
+  // Fix Nexus dropdown position dynamically (always below trigger)
+  function positionDropdownBelow(triggerId, dropdownId) {
+    const trigger = document.getElementById(triggerId);
+    const dropdown = document.getElementById(dropdownId);
+    if (!trigger || !dropdown) return;
+
+    const rect = trigger.getBoundingClientRect();
+    dropdown.style.top = (rect.bottom + 8) + 'px';
+  }
+
+  // Patch toggleNexusDropdown to fix position
+  const origToggleNexus = window.toggleNexusDropdown;
+  window.toggleNexusDropdown = function() {
+    if (origToggleNexus) origToggleNexus();
+    setTimeout(() => positionDropdownBelow('nexusTrigger', 'nexusDropdown'), 0);
+  };
+
+  // Patch toggleCollectionsDropdown to fix position
+  const origToggleCollections = window.toggleCollectionsDropdown;
+  window.toggleCollectionsDropdown = function() {
+    if (origToggleCollections) origToggleCollections();
+    setTimeout(() => {
+      const toggle = document.querySelector('.collections-toggle');
+      const menu = document.getElementById('collectionsMenu');
+      if (!toggle || !menu) return;
+      const rect = toggle.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 8) + 'px';
+    }, 0);
+  };
+});
+
+function openCartSidebar() {
+  const sidebar = document.getElementById('cartSidebar');
+
+  updateCartUI();
+
+  sidebar.classList.add('open');
+
+  document.body.classList.add('cart-open');
+}
+
+function closeCartSidebar() {
+  const sidebar = document.getElementById('cartSidebar');
+  const content = document.querySelector('.cart-sidebar-content');
+
+  sidebar.classList.remove('open');
+  document.body.classList.remove('cart-open');
+
+  if (content) {
+    content.style.transform = '';
+    content.style.transition = '';
+  }
+}
+
+// ============================================
 // Setup Global Event Listeners
 // ============================================
 function setupGlobalListeners() {
@@ -200,9 +458,6 @@ function setupGlobalListeners() {
     const dropdown = document.getElementById('modelDropdown');
     const input = document.getElementById('modelInput');
     if (dropdown && !dropdown.contains(e.target) && e.target !== input) hideAutocompleteDropdown();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideAutocompleteDropdown();
   });
 }
 
@@ -471,8 +726,11 @@ function createResultCard(tank) {
   }
   card.innerHTML = `
     <div class="card-header">
-      <div class="model-name">${tank.model}</div>
-      <div class="card-footer-actions">
+      <div class="card-title-row">
+        <h3 class="model-name">${tank.model}</h3>
+      </div>
+
+      <div class="card-actions">
         <button class="copy-btn" onclick="copyTankDetails(event, ${JSON.stringify(tank).replace(/"/g, '&quot;')})">
           <i class="ri-file-copy-line"></i>
         </button>
@@ -550,17 +808,162 @@ function clearResults() {
 }
 
 // ============================================
-// Notification Toast
+// PREMIUM TOAST with Progress Bar (Apple-Style)
 // ============================================
-function showNotification(message, type = 'info') {
+function showNotification(message, type = 'info', duration = 3000) {
+  // Remove existing notifications
+  document.querySelectorAll('.tm-notification').forEach(n => n.remove());
+  
   const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  const style = document.createElement('style');
-  style.textContent = `.notification{position:fixed;top:20px;right:20px;padding:16px 24px;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);font-size:14px;font-weight:500;z-index:10000;animation:slideIn .3s ease-out}.notification-success{border-left:4px solid #34C759;color:#065F46}.notification-error{border-left:4px solid #FF3B30;color:#7F1D1D}.notification-info{border-left:4px solid #007AFF;color:#1E40AF}@keyframes slideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(100%)}}`;
-  if (!document.querySelector('style[data-notifications]')) { style.setAttribute('data-notifications', ''); document.head.appendChild(style); }
+  notification.className = `tm-notification tm-notification-${type}`;
+  
+  // Icon based on type
+  let icon = '';
+  switch(type) {
+    case 'success': icon = '<i class="ri-check-line"></i>'; break;
+    case 'error': icon = '<i class="ri-error-warning-line"></i>'; break;
+    case 'info': icon = '<i class="ri-information-line"></i>'; break;
+    default: icon = '<i class="ri-notification-line"></i>';
+  }
+  
+  notification.innerHTML = `
+    <div class="tm-notification-icon">${icon}</div>
+    <div class="tm-notification-text">${message}</div>
+    <div class="tm-notification-progress"></div>
+  `;
+  
+  // Inject styles if not already present
+  if (!document.querySelector('style[data-tm-notifications]')) {
+    const style = document.createElement('style');
+    style.setAttribute('data-tm-notifications', '');
+    style.textContent = `
+      .tm-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        min-width: 280px;
+        max-width: 400px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+        z-index: 99999;
+        animation: tmSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow: hidden;
+      }
+      
+      .tm-notification-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      
+      .tm-notification-success .tm-notification-icon {
+        background: linear-gradient(135deg, #34C759, #30D158);
+        color: white;
+      }
+      
+      .tm-notification-error .tm-notification-icon {
+        background: linear-gradient(135deg, #FF3B30, #FF453A);
+        color: white;
+      }
+      
+      .tm-notification-info .tm-notification-icon {
+        background: linear-gradient(135deg, #007AFF, #0A84FF);
+        color: white;
+      }
+      
+      .tm-notification-text {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 500;
+        color: #1D1D1F;
+        line-height: 1.4;
+      }
+      
+      .tm-notification-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #007AFF, #0A84FF);
+        border-radius: 0 0 16px 16px;
+        animation: tmProgress ${duration}ms linear forwards;
+      }
+      
+      .tm-notification-success .tm-notification-progress {
+        background: linear-gradient(90deg, #34C759, #30D158);
+      }
+      
+      .tm-notification-error .tm-notification-progress {
+        background: linear-gradient(90deg, #FF3B30, #FF453A);
+      }
+      
+      @keyframes tmSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(100%) scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+      }
+      
+      @keyframes tmSlideOut {
+        from {
+          opacity: 1;
+          transform: translateX(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100%) scale(0.9);
+        }
+      }
+      
+      @keyframes tmProgress {
+        from {
+          width: 100%;
+        }
+        to {
+          width: 0%;
+        }
+      }
+      
+      /* Mobile optimization */
+      @media (max-width: 768px) {
+        .tm-notification {
+          top: 16px;
+          right: 16px;
+          left: 16px;
+          min-width: auto;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
   document.body.appendChild(notification);
-  setTimeout(() => { notification.style.animation = 'slideOut 0.3s ease-in'; setTimeout(() => document.body.removeChild(notification), 300); }, 3000);
+  
+  // Auto dismiss
+  setTimeout(() => {
+    notification.style.animation = 'tmSlideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, duration);
 }
 
 // ============================================
@@ -604,9 +1007,19 @@ function switchToCollection(collectionId) {
 function createNewCollection() {
   document.getElementById("collectionModal").classList.add("show");
   document.getElementById("collectionsMenu").style.display = "none";
+  
+  // Clear input and focus
+  const input = document.getElementById("collectionNameInput");
+  if (input) {
+    input.value = '';
+    setTimeout(() => input.focus(), 100);
+  }
 }
 
-function closeCollectionModal() { document.getElementById("collectionModal").classList.remove("show"); }
+function closeCollectionModal() { 
+  document.getElementById("collectionModal").classList.remove("show"); 
+  window.tempRenameId = null;
+}
 
 function confirmCreateCollection() {
   const name = document.getElementById("collectionNameInput").value.trim();
@@ -640,14 +1053,8 @@ function deleteCollectionAction(collectionId) {
 }
 
 // ============================================
-// Cart / Sidebar
+// Cart UI Update
 // ============================================
-function toggleCartSidebar() {
-  const sidebar = document.getElementById('cartSidebar');
-  if (sidebar.classList.contains('open')) sidebar.classList.remove('open');
-  else { updateCartUI(); sidebar.classList.add('open'); }
-}
-
 function addTankToCart(event, tank, buttonElement) {
   event.preventDefault(); event.stopPropagation();
   const added = collectionsManager.addTankToCollection(tank);
@@ -664,7 +1071,10 @@ function addTankToCart(event, tank, buttonElement) {
 }
 
 function removeTankFromCart(tankId) {
-  if (collectionsManager.removeTankFromCollection(tankId)) { updateCartUI(); showNotification('Tank removed', 'success'); }
+  if (collectionsManager.removeTankFromCollection(tankId)) { 
+    updateCartUI(); 
+    showNotification('Tank removed', 'success'); 
+  }
 }
 
 function updateCartUI() {
@@ -723,17 +1133,17 @@ function copyCollection(format = 'text') {
   } else fallbackCopy(textToCopy);
 }
 
-function shareCollection() {
-  const collection = collectionsManager.getActiveCollection();
-  if (!collection.tanks.length) { showNotification('Add tanks to collection first', 'error'); return; }
-  const shareData = collectionsManager.exportCollection(null, 'json');
-  const shareJSON = JSON.stringify(shareData);
-  if (navigator.share) {
-    navigator.share({ title: `TankMate: ${collection.name}`, text: shareJSON }).catch(() => showNotification('Copied to clipboard', 'success'));
-  } else if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(shareJSON).then(() => showNotification('Collection data copied!', 'success'));
-  }
-}
+// function shareCollection() {
+//   const collection = collectionsManager.getActiveCollection();
+//   if (!collection.tanks.length) { showNotification('Add tanks to collection first', 'error'); return; }
+//   const shareData = collectionsManager.exportCollection(null, 'json');
+//   const shareJSON = JSON.stringify(shareData);
+//   if (navigator.share) {
+//     navigator.share({ title: `TankMate: ${collection.name}`, text: shareJSON }).catch(() => showNotification('Copied to clipboard', 'success'));
+//   } else if (navigator.clipboard && window.isSecureContext) {
+//     navigator.clipboard.writeText(shareJSON).then(() => showNotification('Collection data copied!', 'success'));
+//   }
+// }
 
 // ============================================
 // Service Worker
@@ -746,52 +1156,37 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-
-// ============================================================
-// NEXUS INTEGRATION v2
-// ============================================================
-
+// ============================================
+// NEXUS INTEGRATION (Keep your existing code)
+// ============================================
 const NexusSession = {
   _key: 'nexus_salesperson',
-
-  get() {
-    try { return JSON.parse(sessionStorage.getItem(this._key)); }
-    catch { return null; }
-  },
-
+  get() { try { return JSON.parse(sessionStorage.getItem(this._key)); } catch { return null; } },
   set(user) {
     sessionStorage.setItem(this._key, JSON.stringify(user));
     this._updateTrigger(user);
     this._updateExportButton(user);
-    setTimeout(() => showNexusSuggestions(), 400);
   },
-
   clear() {
     sessionStorage.removeItem(this._key);
     this._updateTrigger(null);
     this._updateExportButton(null);
-    document.getElementById('nexusSuggestions').classList.remove('show');
     _nexusUsersCache = null;
     const btn = document.getElementById('myProjectsBtn');
     if (btn) btn.style.display = 'none';
   },
-
   _updateTrigger(user) {
     const trigger = document.getElementById('nexusTrigger');
-    const label   = document.getElementById('nexusTriggerLabel');
+    const label = document.getElementById('nexusTriggerLabel');
     if (!trigger) return;
     if (user) {
       label.textContent = user.name.split(' ')[0];
       trigger.classList.add('connected');
-      document.querySelectorAll('.nexus-dropdown-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.name === user.name);
-      });
     } else {
       label.textContent = 'Nexus';
       trigger.classList.remove('connected');
     }
   },
-
   _updateExportButton(user) {
     const btn = document.getElementById('nexusExportBtn');
     if (!btn) return;
@@ -805,49 +1200,44 @@ const NexusSession = {
       btn.innerHTML = `<i class="ri-send-plane-line"></i> Export TO NEXUS`;
     }
   },
-
   init() {
     const saved = this.get();
     this._updateTrigger(saved);
     this._updateExportButton(saved);
     _syncMyProjectsBtn();
-    if (saved) setTimeout(() => showNexusSuggestions(), 600);
   }
 };
 
-// ── User cache ───────────────────────────────────────────────
 let _nexusUsersCache = null;
+let _nexusProjectsCache = null;
+let _pendingDupMatches = [];
+let _dupCheckTimer = null;
 
 async function _fetchNexusUsers() {
   if (_nexusUsersCache) return _nexusUsersCache;
   try {
-    const res  = await fetch('/api/nexus/users/');
+    const res = await fetch('/api/nexus/users/');
     const data = await res.json();
     if (data.users && data.users.length) _nexusUsersCache = data.users;
     return _nexusUsersCache || [];
   } catch { return []; }
 }
 
-// ── My Projects button visibility ────────────────────────────
 function _syncMyProjectsBtn() {
-  const btn  = document.getElementById('myProjectsBtn');
+  const btn = document.getElementById('myProjectsBtn');
   const user = NexusSession.get();
   if (btn) btn.style.display = user ? 'flex' : 'none';
 }
 
-// ── Nexus Dropdown ───────────────────────────────────────────
 async function toggleNexusDropdown() {
   const dropdown = document.getElementById('nexusDropdown');
-  const isOpen   = dropdown.style.display === 'block';
+  const isOpen = dropdown.style.display === 'block';
   if (isOpen) { dropdown.style.display = 'none'; return; }
-
   dropdown.style.display = 'block';
   const listEl = document.getElementById('nexusDropdownList');
   const footer = document.getElementById('nexusDropdownFooter');
-  const saved  = NexusSession.get();
-
+  const saved = NexusSession.get();
   listEl.innerHTML = `<div class="nexus-dropdown-loading"><div class="nexus-spinner"></div><span>Loading...</span></div>`;
-
   try {
     const users = await _fetchNexusUsers();
     if (!users.length) {
@@ -880,7 +1270,6 @@ function selectNexusIdentity(name) {
   showNotification(`Connected as ${name}`, 'success');
 }
 
-// Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
   const wrapper = document.getElementById('nexusDropdownWrapper');
   if (wrapper && !wrapper.contains(e.target)) {
@@ -889,38 +1278,29 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ── PREMIUM EXPORT MODAL (replaces browser confirm) ──────────
 async function exportToNexus() {
   const user = NexusSession.get();
-
   if (!user) {
     await toggleNexusDropdown();
     showNotification('Please select your identity first', 'error');
     return;
   }
-
   const collection = collectionsManager.getActiveCollection();
   if (!collection.tanks.length) {
     showNotification('Add tanks to collection first', 'error');
     return;
   }
-
-  // Build and show premium export confirmation modal
   _showExportConfirmModal(collection, user.name);
 }
 
 function _showExportConfirmModal(collection, salesPerson) {
   const stats = collectionsManager.getCollectionStats();
   const modal = document.getElementById('nexusExportConfirmModal');
-
-  // Fill in collection details
-  document.getElementById('ecm-client-name').textContent   = collection.name;
-  document.getElementById('ecm-sales-person').textContent  = salesPerson;
-  document.getElementById('ecm-tank-count').textContent    = `${stats.count} tank${stats.count !== 1 ? 's' : ''}`;
-  document.getElementById('ecm-capacity').textContent      = `${stats.totalCapacity} KL`;
-  document.getElementById('ecm-total-price').textContent   = `₹${parseInt(stats.totalPrice).toLocaleString('en-IN')}`;
-
-  // Build tanks list preview
+  document.getElementById('ecm-client-name').textContent = collection.name;
+  document.getElementById('ecm-sales-person').textContent = salesPerson;
+  document.getElementById('ecm-tank-count').textContent = `${stats.count} tank${stats.count !== 1 ? 's' : ''}`;
+  document.getElementById('ecm-capacity').textContent = `${stats.totalCapacity} KL`;
+  document.getElementById('ecm-total-price').textContent = `₹${parseInt(stats.totalPrice).toLocaleString('en-IN')}`;
   const tanksHtml = collection.tanks.map((tank, i) => `
     <div class="ecm-tank-row">
       <span class="ecm-tank-num">${i + 1}</span>
@@ -930,27 +1310,22 @@ function _showExportConfirmModal(collection, salesPerson) {
       </div>
       <span class="ecm-tank-badge ecm-badge-${tank.category.toLowerCase()}">${tank.category}</span>
     </div>`).join('');
-
   document.getElementById('ecm-tanks-list').innerHTML = tanksHtml;
-
-  // Store for confirm action
-  window._ecmCollection   = collection;
-  window._ecmSalesPerson  = salesPerson;
-
+  window._ecmCollection = collection;
+  window._ecmSalesPerson = salesPerson;
   modal.classList.add('show');
 }
 
 function closeExportConfirmModal() {
   document.getElementById('nexusExportConfirmModal').classList.remove('show');
-  window._ecmCollection  = null;
+  window._ecmCollection = null;
   window._ecmSalesPerson = null;
 }
 
 async function confirmExportToNexus() {
-  const collection  = window._ecmCollection;
+  const collection = window._ecmCollection;
   const salesPerson = window._ecmSalesPerson;
   if (!collection || !salesPerson) return;
-
   closeExportConfirmModal();
   await _doExport(collection, salesPerson);
 }
@@ -958,21 +1333,20 @@ async function confirmExportToNexus() {
 async function _doExport(collection, salesPerson) {
   const exported = collectionsManager.exportCollection(null, 'json');
   showNotification('Sending to Nexus…', 'info');
-
   try {
-    const res  = await fetch('/api/nexus/export/', {
-      method:  'POST',
+    const res = await fetch('/api/nexus/export/', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        client_name:  collection.name,
+      body: JSON.stringify({
+        client_name: collection.name,
         sales_person: salesPerson,
-        tanks:        exported.tanks,
+        tanks: exported.tanks,
       }),
     });
     const data = await res.json();
     if (data.success) {
       showNotification(`Proposal #${data.log_id} created ✓`, 'success');
-      _markExported(collection.name);
+      _nexusProjectsCache = null;
       if (data.redirect_url) window.open(data.redirect_url, '_blank');
     } else {
       showNotification(data.error || 'Export failed', 'error');
@@ -982,143 +1356,74 @@ async function _doExport(collection, salesPerson) {
   }
 }
 
-// ── Track exported names ─────────────────────────────────────
-function _getExportedNames() {
-  try { return JSON.parse(sessionStorage.getItem('nexus_exported') || '[]'); }
-  catch { return []; }
-}
-
-function _markExported(name) {
-  const list = _getExportedNames();
-  if (!list.includes(name.toLowerCase())) {
-    list.push(name.toLowerCase());
-    sessionStorage.setItem('nexus_exported', JSON.stringify(list));
-  }
-}
-
-// ── SMART COLLECTION NAME SUGGESTIONS ────────────────────────
-// Replaces the simple "available/not available" check
-// Shows SIMILAR existing collections from DB as clickable cards
-let _nexusProjectsCache = null;   // { user: string, projects: [] }
-let _pendingDupMatches  = [];     // DB matches for current input
-let _dupCheckTimer      = null;   // debounce handle
-
-// ── Invalidate cache when user changes ───────────────────────────────────────
-const _origNexusClear = NexusSession.clear.bind(NexusSession);
-NexusSession.clear = function () {
-  _nexusProjectsCache = null;
-  _pendingDupMatches  = [];
-  _origNexusClear();
-};
-
-// ────────────────────────────────────────────────────────────────────────────
-// Fetch all projects for a user — cached for the session
-// ────────────────────────────────────────────────────────────────────────────
-async function _getProjectsForUser(salesPerson) {
-  if (_nexusProjectsCache && _nexusProjectsCache.user === salesPerson) {
-    return _nexusProjectsCache.projects;
-  }
-  const resp     = await fetch(`/api/nexus/projects/?sales_person=${encodeURIComponent(salesPerson)}`);
-  const data     = await resp.json();
-  const projects = data.projects || [];
-  _nexusProjectsCache = { user: salesPerson, projects };
-  return projects;
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// checkCollectionNameDuplicate  ← called oninput from home.html
-// ────────────────────────────────────────────────────────────────────────────
 function checkCollectionNameDuplicate(value) {
-  const checkEl   = document.getElementById('collectionNameCheck');
+  const checkEl = document.getElementById('collectionNameCheck');
   const suggestEl = document.getElementById('collectionNameSuggestions');
-  const trimmed   = (value || '').trim();
-
-  // Reset every keystroke
+  const trimmed = (value || '').trim();
   clearTimeout(_dupCheckTimer);
   _pendingDupMatches = [];
   if (!checkEl) return;
-
-  checkEl.className   = 'collection-name-check';
+  checkEl.className = 'collection-name-check';
   checkEl.textContent = '';
   if (suggestEl) {
     suggestEl.style.display = 'none';
     suggestEl.innerHTML = '';
   }
-
   if (!trimmed) return;
-
-  // ── 1. Instant local check ────────────────────────────────────────────────
   const localHit = collectionsManager.getAllCollections()
     .find(c => c.name.toLowerCase() === trimmed.toLowerCase());
   if (localHit) {
-    checkEl.className   = 'collection-name-check warning';
+    checkEl.className = 'collection-name-check warning';
     checkEl.textContent = `⚠ Already exists locally (${localHit.tanks.length} tank${localHit.tanks.length !== 1 ? 's' : ''})`;
     return;
   }
-
-  // ── 2. Need Nexus + 2 chars for DB query ─────────────────────────────────
   const user = NexusSession.get();
   if (!user || trimmed.length < 2) {
-    checkEl.className   = 'collection-name-check clear';
+    checkEl.className = 'collection-name-check clear';
     checkEl.textContent = '✓ Name is available';
     return;
   }
-
-  checkEl.className   = 'collection-name-check';
+  checkEl.className = 'collection-name-check';
   checkEl.textContent = '⏳ Checking Nexus…';
-
-  // ── 3. Debounced DB query ─────────────────────────────────────────────────
   _dupCheckTimer = setTimeout(async () => {
     try {
       const resp = await fetch(
         `/api/nexus/check/?sales_person=${encodeURIComponent(user.name)}&q=${encodeURIComponent(trimmed)}`
       );
-      const data    = await resp.json();
+      const data = await resp.json();
       const matches = data.matches || [];
-
-      // Reset display
       checkEl.textContent = '';
-      checkEl.className   = 'collection-name-check';
+      checkEl.className = 'collection-name-check';
       if (suggestEl) { suggestEl.style.display = 'none'; suggestEl.innerHTML = ''; }
-
       if (!matches.length) {
-        checkEl.className   = 'collection-name-check clear';
+        checkEl.className = 'collection-name-check clear';
         checkEl.textContent = '✓ Name is available';
         return;
       }
-
       _pendingDupMatches = matches;
-
       const exact = matches.find(m => m.client_name.toLowerCase() === trimmed.toLowerCase());
       if (exact) {
-        checkEl.className   = 'collection-name-check warning';
+        checkEl.className = 'collection-name-check warning';
         checkEl.textContent = `⚠ Exact match in Nexus — created ${exact.created_at}`;
       } else {
-        checkEl.className   = 'collection-name-check warning';
+        checkEl.className = 'collection-name-check warning';
         checkEl.textContent = `⚠ ${matches.length} similar project${matches.length > 1 ? 's' : ''} found in your Nexus history`;
       }
-
       if (suggestEl) _renderDupCards(matches, suggestEl);
-
     } catch (_err) {
-      checkEl.className   = 'collection-name-check clear';
+      checkEl.className = 'collection-name-check clear';
       checkEl.textContent = '✓ Name is available';
     }
   }, 400);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Render suggestion cards inside #collectionNameSuggestions
-// ────────────────────────────────────────────────────────────────────────────
 function _renderDupCards(matches, container) {
   container.innerHTML = '';
   container.style.display = 'block';
-
   const labelEl = document.createElement('div');
   labelEl.className = 'cns-label';
   labelEl.innerHTML = '<i class="ri-history-line"></i> Similar projects in your Nexus history — click to import';
   container.appendChild(labelEl);
-
   matches.forEach(match => {
     const card = document.createElement('div');
     card.className = 'cns-card';
@@ -1138,14 +1443,11 @@ async function _importFromSuggestion(match) {
   closeCollectionModal();
   const user = NexusSession.get();
   if (!user) return;
-
   showNotification('Loading project…', 'info');
-
   try {
-    // Invalidate cache so we get fresh payload
     _nexusProjectsCache = null;
     const projects = await _getProjectsForUser(user.name);
-    const project  = projects.find(p => p.log_id === match.log_id);
+    const project = projects.find(p => p.log_id === match.log_id);
     if (!project) { showNotification('Could not find project data', 'error'); return; }
     importNexusProject(project.log_id, project.client_name, project.payload);
   } catch {
@@ -1153,87 +1455,34 @@ async function _importFromSuggestion(match) {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
-// Override confirmCreateCollection — intercept exact DB duplicates
-// ════════════════════════════════════════════════════════════════════
-const _origConfirmCreate = confirmCreateCollection;
-
-window.confirmCreateCollection = async function () {
-  const name = (document.getElementById('collectionNameInput').value || '').trim();
-
-  // Rename flow — skip check
-  if (window.tempRenameId || !name) {
-    _origConfirmCreate();
-    return;
+async function _getProjectsForUser(salesPerson) {
+  if (_nexusProjectsCache && _nexusProjectsCache.user === salesPerson) {
+    return _nexusProjectsCache.projects;
   }
-
-  const exact = _pendingDupMatches.find(
-    m => m.client_name.toLowerCase() === name.toLowerCase()
-  );
-
-  if (exact) {
-    // Populate nexusDuplicateModal
-    document.getElementById('ndmTitle').textContent = 'Project Already in Nexus';
-    document.getElementById('ndmMsg').textContent   =
-      `"${exact.client_name}" was exported on ${exact.created_at} with ${exact.tank_count} tank${exact.tank_count !== 1 ? 's' : ''}.`;
-
-    document.getElementById('ndmMatches').innerHTML = `
-      <div class="ndm-match-card">
-        <div class="ndm-match-name">${_esc(exact.client_name)}</div>
-        <div class="ndm-match-meta">${exact.tank_count} tanks · ${exact.created_at}</div>
-      </div>`;
-
-    window._ndmPendingMatch = exact;
-    document.getElementById('nexusDuplicateModal').classList.add('show');
-    return;
-  }
-
-  _origConfirmCreate();
-};
-
-// ── Duplicate modal buttons ───────────────────────────────────────────────────
-function closeNexusDuplicateModal() {
-  document.getElementById('nexusDuplicateModal').classList.remove('show');
-  window._ndmPendingMatch = null;
-  _origConfirmCreate();   // "Create Anyway"
+  const resp = await fetch(`/api/nexus/projects/?sales_person=${encodeURIComponent(salesPerson)}`);
+  const data = await resp.json();
+  const projects = data.projects || [];
+  _nexusProjectsCache = { user: salesPerson, projects };
+  return projects;
 }
 
-async function importAndCloseDuplicateModal() {
-  document.getElementById('nexusDuplicateModal').classList.remove('show');
-  closeCollectionModal();
-  const match = window._ndmPendingMatch;
-  window._ndmPendingMatch = null;
-  if (match) await _importFromSuggestion(match);
-}
-
-// ════════════════════════════════════════════════════════════════════
-// My Nexus Projects Modal
-// ════════════════════════════════════════════════════════════════════
 async function openNexusProjects() {
   const user = NexusSession.get();
   if (!user) { showNotification('Connect to Nexus first', 'error'); return; }
-
   document.getElementById('collectionsMenu').style.display = 'none';
-
-  const modal    = document.getElementById('nexusProjectsModal');
+  const modal = document.getElementById('nexusProjectsModal');
   const subtitle = document.getElementById('nexusProjectsSubtitle');
-  const listEl   = document.getElementById('nexusProjectsList');
-
+  const listEl = document.getElementById('nexusProjectsList');
   modal.classList.add('show');
   subtitle.textContent = `Projects by ${user.name} — click Import to load into TankMate`;
-
   listEl.innerHTML = `
     <div style="text-align:center;padding:24px;color:#9ca3af;">
       <div class="nexus-spinner" style="margin:0 auto 8px;"></div>
       Loading your projects…
     </div>`;
-
-  // Always fetch fresh when opening modal
   _nexusProjectsCache = null;
-
   try {
     const projects = await _getProjectsForUser(user.name);
-
     if (!projects.length) {
       listEl.innerHTML = `
         <div style="text-align:center;padding:32px;color:#9ca3af;">
@@ -1242,7 +1491,6 @@ async function openNexusProjects() {
         </div>`;
       return;
     }
-
     listEl.innerHTML = projects.map(p => `
       <div class="nexus-project-item">
         <div class="nexus-project-item-header">
@@ -1258,7 +1506,6 @@ async function openNexusProjects() {
           </button>
         </div>
       </div>`).join('');
-
   } catch (err) {
     listEl.innerHTML = `
       <div style="text-align:center;padding:24px;color:#ef4444;">
@@ -1272,25 +1519,19 @@ function closeNexusProjectsModal() {
   document.getElementById('nexusProjectsModal').classList.remove('show');
 }
 
-// ════════════════════════════════════════════════════════════════════
-// Import a project's payload into a TankMate collection
-// ════════════════════════════════════════════════════════════════════
 function importNexusProject(logId, clientName, payload) {
   const existing = collectionsManager.getAllCollections()
     .find(c => c.name.toLowerCase() === clientName.toLowerCase());
-
   if (existing) {
-    // Show the overwrite-or-new modal
-    document.getElementById('iom-name').textContent  = clientName;
+    document.getElementById('iom-name').textContent = clientName;
     document.getElementById('iom-count').textContent =
       `${existing.tanks.length} tank${existing.tanks.length !== 1 ? 's' : ''}`;
-    window._iomPayload    = payload;
+    window._iomPayload = payload;
     window._iomClientName = clientName;
     window._iomExistingId = existing.id;
     document.getElementById('importOverwriteModal').classList.add('show');
     return;
   }
-
   const col = collectionsManager.createCollection(clientName);
   _loadPayloadIntoCollection(payload, col.id, clientName);
 }
@@ -1314,18 +1555,17 @@ function importAsNewCollection() {
 
 function _loadPayloadIntoCollection(payload, collectionId, label) {
   const tanks = (payload || []).map(p => ({
-    model:          p.tankModel      || '',
-    category:       _guessCategory(p.tankModel),
-    category_name:  _guessCategoryName(p.tankModel),
-    diameter:       parseFloat(p.tankDiameter) || 0,
-    height:         parseFloat(p.tankHeight)   || 0,
-    net_capacity:   p.netCapacity    || 0,
-    gross_capacity: p.grossCapacity  || 0,
-    ideal_price:    p.tankCost       || 0,
-    nrp:            p.tankCost       || 0,
-    price_per_kl:   p.netCapacity ? Math.round(p.tankCost / p.netCapacity) : 0,
+    model: p.tankModel || '',
+    category: _guessCategory(p.tankModel),
+    category_name: _guessCategoryName(p.tankModel),
+    diameter: parseFloat(p.tankDiameter) || 0,
+    height: parseFloat(p.tankHeight) || 0,
+    net_capacity: p.netCapacity || 0,
+    gross_capacity: p.grossCapacity || 0,
+    ideal_price: p.tankCost || 0,
+    nrp: p.tankCost || 0,
+    price_per_kl: p.netCapacity ? Math.round(p.tankCost / p.netCapacity) : 0,
   }));
-
   tanks.forEach(t => collectionsManager.addTankToCollection(t, collectionId));
   collectionsManager.switchCollection(collectionId);
   updateCartUI();
@@ -1344,174 +1584,24 @@ function _guessCategory(model) {
 
 function _guessCategoryName(model) {
   return { RCT:'Rhino Commercial Tank', SST:'SecureStore Micro-Coated Tanks',
-           SFM:'Factory Mutual Tanks',  GFS:'Glass Fiber Sheets Tank' }[_guessCategory(model)] || 'Tank';
+           SFM:'Factory Mutual Tanks', GFS:'Glass Fiber Sheets Tank' }[_guessCategory(model)] || 'Tank';
 }
 
-// ════════════════════════════════════════════════════════════════════
-// Premium Export Confirmation Modal
-// ════════════════════════════════════════════════════════════════════
-async function exportToNexus() {
-  const user = NexusSession.get();
-  if (!user) {
-    await toggleNexusDropdown();
-    showNotification('Please select your identity first', 'error');
-    return;
-  }
-  const collection = collectionsManager.getActiveCollection();
-  if (!collection.tanks.length) {
-    showNotification('Add tanks to collection first', 'error');
-    return;
-  }
-  _showExportConfirmModal(collection, user.name);
+function closeNexusDuplicateModal() {
+  document.getElementById('nexusDuplicateModal').classList.remove('show');
+  window._ndmPendingMatch = null;
 }
 
-function _showExportConfirmModal(collection, salesPerson) {
-  const stats = collectionsManager.getCollectionStats();
-  document.getElementById('ecm-client-name').textContent  = collection.name;
-  document.getElementById('ecm-sales-person').textContent = salesPerson;
-  document.getElementById('ecm-tank-count').textContent   = `${stats.count} tank${stats.count !== 1 ? 's' : ''}`;
-  document.getElementById('ecm-capacity').textContent     = `${stats.totalCapacity} KL`;
-  document.getElementById('ecm-total-price').textContent  = `₹${parseInt(stats.totalPrice).toLocaleString('en-IN')}`;
-
-  document.getElementById('ecm-tanks-list').innerHTML = collection.tanks.map((t, i) => `
-    <div class="ecm-tank-row">
-      <span class="ecm-tank-num">${i + 1}</span>
-      <div class="ecm-tank-info">
-        <span class="ecm-tank-model">${_esc(t.model)}</span>
-        <span class="ecm-tank-spec">${t.net_capacity.toFixed(1)} KL · ₹${t.ideal_price.toLocaleString('en-IN')}</span>
-      </div>
-      <span class="ecm-tank-badge ecm-badge-${t.category.toLowerCase()}">${t.category}</span>
-    </div>`).join('');
-
-  window._ecmCollection  = collection;
-  window._ecmSalesPerson = salesPerson;
-  document.getElementById('nexusExportConfirmModal').classList.add('show');
+async function importAndCloseDuplicateModal() {
+  document.getElementById('nexusDuplicateModal').classList.remove('show');
+  closeCollectionModal();
+  const match = window._ndmPendingMatch;
+  window._ndmPendingMatch = null;
+  if (match) await _importFromSuggestion(match);
 }
 
-function closeExportConfirmModal() {
-  document.getElementById('nexusExportConfirmModal').classList.remove('show');
-  window._ecmCollection = window._ecmSalesPerson = null;
-}
-
-async function confirmExportToNexus() {
-  const collection  = window._ecmCollection;
-  const salesPerson = window._ecmSalesPerson;
-  if (!collection || !salesPerson) return;
-  closeExportConfirmModal();
-
-  const exported = collectionsManager.exportCollection(null, 'json');
-  showNotification('Sending to Nexus…', 'info');
-
-  try {
-    const res  = await fetch('/api/nexus/export/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_name:  collection.name,
-        sales_person: salesPerson,
-        tanks:        exported.tanks,
-      }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      showNotification(`Proposal #${data.log_id} created ✓`, 'success');
-      _markExported(collection.name);
-      // Invalidate project cache so "My Projects" is fresh next time
-      _nexusProjectsCache = null;
-      if (data.redirect_url) window.open(data.redirect_url, '_blank');
-    } else {
-      showNotification(data.error || 'Export failed', 'error');
-    }
-  } catch {
-    showNotification('Could not reach Nexus', 'error');
-  }
-}
-
-// ── Track exported names so suggestions banner doesn't re-show them ──────────
-function _getExportedNames() {
-  try { return JSON.parse(sessionStorage.getItem('nexus_exported') || '[]'); }
-  catch { return []; }
-}
-function _markExported(name) {
-  const list = _getExportedNames();
-  if (!list.includes(name.toLowerCase())) {
-    list.push(name.toLowerCase());
-    sessionStorage.setItem('nexus_exported', JSON.stringify(list));
-  }
-}
-
-// ── My Projects button sync ───────────────────────────────────────────────────
-function _syncMyProjectsBtn() {
-  const btn = document.getElementById('myProjectsBtn');
-  if (btn) btn.style.display = NexusSession.get() ? 'flex' : 'none';
-}
-
-// ── HTML escape helper ────────────────────────────────────────────────────────
 function _esc(str) {
   return String(str || '')
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-// ── Run on page load ──────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  _syncMyProjectsBtn();
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
