@@ -1131,3 +1131,37 @@ body.cart-open { overflow: hidden; }
   .pricing-section { break-inside: avoid; page-break-inside: avoid; }
   .category-badge  { border: 1px solid black !important; }
 }
+
+/* Locked Nexus project item */
+.nexus-project-locked {
+  background: #FFF5F5;
+  border-color: #FECACA;
+  opacity: 0.85;
+}
+
+.npi-locked-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #EF4444;
+  background: #FEE2E2;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.npi-lock-reason {
+  display: block;
+  font-size: 11px;
+  color: #EF4444;
+  margin-top: 2px;
+}
+
+.npi-btn-locked {
+  background: #F3F4F6 !important;
+  color: #9CA3AF !important;
+  cursor: not-allowed !important;
+  border-color: #E5E7EB !important;
+}

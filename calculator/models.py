@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.utils import timezone
 
 class Tank(models.Model):
     """
@@ -201,3 +201,65 @@ class Tank(models.Model):
     admin_display_price.short_description = "Price"
 
 
+class NexusExportLog(models.Model):
+    """
+    Tracks all exports from TankMate to Nexus.
+    Implements lock mechanism to prevent data loss.
+    """
+    
+    # Core fields
+    log_id = models.CharField(max_length=100, unique=True, db_index=True)
+    client_name = models.CharField(max_length=255, db_index=True)
+    sales_person = models.CharField(max_length=255, db_index=True)
+    tank_count = models.IntegerField(default=0)
+    payload = models.JSONField()
+    
+    export_hash = models.CharField(max_length=64, null=True, blank=True)
+    
+    # 🔐 Lock System
+    is_modified = models.BooleanField(default=False, db_index=True, 
+                                       help_text="True if collection modified in Nexus")
+    modification_type = models.CharField(max_length=50, null=True, blank=True,
+                                          help_text="e.g., 'accessories_added', 'tanks_edited'")
+    modified_at = models.DateTimeField(null=True, blank=True)
+    modified_by = models.CharField(max_length=255, null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'nexus_export_log'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['sales_person', 'client_name']),
+            models.Index(fields=['sales_person', 'is_modified']),
+        ]
+    
+    def __str__(self):
+        status = "🔒 LOCKED" if self.is_modified else "✅ Editable"
+        return f"{self.client_name} (#{self.log_id}) - {status}"
+    
+    def lock(self, modification_type='accessories_added', modified_by=None):
+        """Lock this collection from further edits"""
+        self.is_modified = True
+        self.modification_type = modification_type
+        self.modified_at = timezone.now()
+        self.modified_by = modified_by
+        self.save(update_fields=['is_modified', 'modification_type', 'modified_at', 'modified_by', 'updated_at'])
+    
+    def unlock(self):
+        """Unlock this collection (use with caution)"""
+        self.is_modified = False
+        self.modification_type = None
+        self.modified_at = None
+        self.modified_by = None
+        self.save(update_fields=['is_modified', 'modification_type', 'modified_at', 'modified_by', 'updated_at'])
+    
+    def can_reimport(self):
+        """Check if this collection can be imported back to TankMate"""
+        return not self.is_modified
+    
+    def can_reexport(self):
+        """Check if this collection can be exported again from TankMate"""
+        return not self.is_modified

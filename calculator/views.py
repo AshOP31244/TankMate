@@ -7,6 +7,7 @@ import csv
 import json
 import os
 import time
+import hashlib
 from django.contrib import messages
 from .models import Tank
 from django.contrib.auth import authenticate, login, logout
@@ -94,9 +95,6 @@ def get_nexus_users(request):
 
 @csrf_exempt
 def export_to_nexus(request):
-    """
-    Writes a TankMate collection into nexus.pricing_logs.
-    """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
     try:
@@ -114,6 +112,10 @@ def export_to_nexus(request):
 
         nexus_payload = [map_tank_to_nexus(t) for t in tanks]
 
+        # ── Compute hash of what we're about to export ──────────────────────
+        export_hash = _compute_payload_hash(nexus_payload)
+
+        # ── Write to Nexus DB ────────────────────────────────────────────────
         conn = get_nexus_connection()
         cur  = conn.cursor()
         cur.execute("""
@@ -121,11 +123,25 @@ def export_to_nexus(request):
             VALUES (%s, %s, %s::jsonb)
             RETURNING log_id
         """, (client_name, sales_person, json.dumps(nexus_payload)))
-
         log_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
+
+        # ── Save export log with hash in TankMate's local DB ─────────────────
+        # This is the record we'll check against on import
+        from .models import NexusExportLog
+        NexusExportLog.objects.update_or_create(
+            log_id=log_id,
+            defaults={
+                'client_name':  client_name,
+                'sales_person': sales_person,
+                'tank_count':   len(nexus_payload),
+                'payload':      nexus_payload,
+                'export_hash':  export_hash,      # ← THE KEY FIELD
+                'is_modified':  False,
+            }
+        )
 
         NEXUS_BASE_URL = os.environ.get('NEXUS_BASE_URL', 'https://nexus.shubhamtanks.org')
         return JsonResponse({
@@ -397,64 +413,64 @@ def download_tank_template(request):
 
 
 def check_nexus_duplicate(request):
-    """
-    Live search: returns projects whose client_name contains the query string.
-    Called on every keystroke (debounced in JS) when creating a new collection.
-
-    Returns ONLY metadata — no payload — to keep response tiny & fast.
-    """
     sales_person = request.GET.get('sales_person', '').strip()
     q            = request.GET.get('q', '').strip()
 
-    # Require at least 2 characters
     if not sales_person or len(q) < 2:
         return JsonResponse({'matches': []})
 
     try:
         conn = get_nexus_connection()
         cur  = conn.cursor()
-
         cur.execute("""
-            SELECT log_id,
-                   client_name,
-                   created_at,
-                   payload
+            SELECT log_id, client_name, created_at, payload
             FROM   nexus.pricing_logs
             WHERE  LOWER(sales_person) = LOWER(%s)
               AND  LOWER(client_name)  LIKE LOWER(%s)
             ORDER  BY created_at DESC
             LIMIT  6
         """, (sales_person, f'%{q}%'))
-
         rows = cur.fetchall()
         cur.close()
         conn.close()
-
-        matches = []
-        for log_id, client_name, created_at, raw_payload in rows:
-            payload    = _parse_payload(raw_payload)
-            tank_count = len(payload)
-            matches.append({
-                'log_id':      log_id,
-                'client_name': client_name,
-                'tank_count':  tank_count,
-                'created_at':  created_at.strftime('%d %b %Y') if created_at else '',
-            })
-
-        return JsonResponse({'matches': matches})
-
     except Exception as e:
-        import traceback; traceback.print_exc()
         return JsonResponse({'matches': [], 'error': str(e)}, status=500)
 
+    from .models import NexusExportLog
+    local_logs = {
+        log.log_id: log
+        for log in NexusExportLog.objects.filter(
+            sales_person__iexact=sales_person,
+            log_id__in=[r[0] for r in rows]
+        )
+    }
+
+    matches = []
+    for log_id, client_name, created_at, raw_payload in rows:
+        payload     = _parse_payload(raw_payload)
+        local_log   = local_logs.get(log_id)
+        export_hash = local_log.export_hash if local_log else None
+        is_modified = _payload_is_modified(export_hash, payload)
+
+        matches.append({
+            'log_id':      log_id,
+            'client_name': client_name,
+            'tank_count':  len(payload),
+            'created_at':  created_at.strftime('%d %b %Y') if created_at else '',
+            'is_locked':   is_modified,
+            'can_import':  not is_modified,
+        })
+
+    return JsonResponse({'matches': matches})
 
 ## ── ALSO ADD THIS to get_nexus_projects if not already present ──────
 ## (used by "My Projects" modal - same pattern but no search filter)
 
 def get_nexus_projects(request):
     """
-    Returns all past projects for a salesperson, newest first.
-    Used by "My Nexus Projects" modal AND by the duplicate-check cache.
+    Returns all past projects for a salesperson.
+    For each project, checks if Nexus payload has been modified
+    since TankMate exported it (using hash comparison).
     """
     sales_person = request.GET.get('sales_person', '').strip()
     if not sales_person:
@@ -463,37 +479,127 @@ def get_nexus_projects(request):
     try:
         conn = get_nexus_connection()
         cur  = conn.cursor()
-
-        # ── Count tanks in Python to avoid json_array_length issues on TEXT columns
         cur.execute("""
-            SELECT log_id,
-                   client_name,
-                   created_at,
-                   payload
+            SELECT log_id, client_name, created_at, payload
             FROM   nexus.pricing_logs
             WHERE  LOWER(sales_person) = LOWER(%s)
             ORDER  BY created_at DESC
             LIMIT  50
         """, (sales_person,))
-
         rows = cur.fetchall()
         cur.close()
         conn.close()
-
-        projects = []
-        for log_id, client_name, created_at, raw_payload in rows:
-            payload    = _parse_payload(raw_payload)
-            tank_count = len(payload)
-            projects.append({
-                'log_id':      log_id,
-                'client_name': client_name,
-                'tank_count':  tank_count,
-                'created_at':  created_at.strftime('%d %b %Y, %I:%M %p') if created_at else '',
-                'payload':     payload,
-            })
-
-        return JsonResponse({'projects': projects})
-
     except Exception as e:
         import traceback; traceback.print_exc()
         return JsonResponse({'error': str(e), 'projects': []}, status=500)
+
+    # ── Load all local export logs for this salesperson in ONE query ──────────
+    # This is fast: one SQLite SELECT, no loops, no N+1 queries
+    from .models import NexusExportLog
+    local_logs = {
+        log.log_id: log
+        for log in NexusExportLog.objects.filter(sales_person__iexact=sales_person)
+    }
+
+    projects = []
+    for log_id, client_name, created_at, raw_payload in rows:
+        payload    = _parse_payload(raw_payload)
+        tank_count = len(payload)
+        
+        # ── Determine lock status ─────────────────────────────────────────────
+        local_log    = local_logs.get(log_id)
+        export_hash  = local_log.export_hash if local_log else None
+        is_modified  = _payload_is_modified(export_hash, payload)
+        
+        # If we detect modification, persist it to local DB so we don't
+        # recompute next time (auto-lock on first detection)
+        if is_modified and local_log and not local_log.is_modified:
+            local_log.is_modified       = True
+            local_log.modification_type = 'nexus_modified'
+            local_log.save(update_fields=['is_modified', 'modification_type', 'updated_at'])
+
+        lock_reason = None
+        if is_modified:
+            # Try to give a specific reason
+            if _payload_has_accessories(payload):
+                lock_reason = 'Accessories were added in Nexus'
+            else:
+                lock_reason = 'Collection was edited in Nexus'
+
+        projects.append({
+            'log_id':      log_id,
+            'client_name': client_name,
+            'tank_count':  tank_count,
+            'created_at':  created_at.strftime('%d %b %Y, %I:%M %p') if created_at else '',
+            'payload':     payload,
+            # ── Lock fields — frontend uses these ──────────────────────────
+            'is_locked':   is_modified,
+            'lock_reason': lock_reason,
+            'can_import':  not is_modified,
+        })
+
+    return JsonResponse({'projects': projects})
+
+
+
+def _compute_payload_hash(tanks: list) -> str:
+    """
+    Compute a stable SHA-256 hash of the base tank fields only.
+    
+    We hash ONLY the fields TankMate originally sent — not accessories.
+    This means:
+      - If Nexus adds accessories → hash changes → LOCKED
+      - If nothing changes → hash matches → ALLOWED
+    
+    Sorting keys and the list itself ensures the hash is stable
+    regardless of field insertion order.
+    """
+    BASE_FIELDS = ['tankModel', 'tankHeight', 'tankDiameter',
+                   'netCapacity', 'grossCapacity', 'tankCost']
+    
+    # Extract only base fields, sorted by tankModel for stability
+    normalized = []
+    for tank in tanks:
+        if not isinstance(tank, dict):
+            continue
+        entry = {f: tank.get(f, '') for f in BASE_FIELDS}
+        normalized.append(entry)
+    
+    # Sort by tankModel so order doesn't matter
+    normalized.sort(key=lambda x: str(x.get('tankModel', '')))
+    
+    # Serialize with sorted keys for determinism
+    serialized = json.dumps(normalized, sort_keys=True, separators=(',', ':'))
+    return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+
+
+def _payload_is_modified(original_hash: str, current_payload: list) -> bool:
+    """
+    Returns True if the current Nexus payload differs from what TankMate exported.
+    True = LOCKED (changes detected)
+    False = CLEAN (safe to import)
+    """
+    if not original_hash:
+        # No hash stored = old export before this system existed
+        # Fall back to accessory detection for backwards compatibility
+        return _payload_has_accessories(current_payload)
+    
+    current_hash = _compute_payload_hash(current_payload)
+    return current_hash != original_hash
+
+def _payload_has_accessories(payload):
+    """Check if Nexus has added accessories to any tank in the payload."""
+    if not payload or not isinstance(payload, list):
+        return False
+    for tank in payload:
+        if not isinstance(tank, dict):
+            continue
+        if tank.get('accessoriesList') and len(tank.get('accessoriesList', [])) > 0:
+            return True
+        if float(tank.get('accessoriesCost', 0) or 0) > 0:
+            return True
+        if tank.get('nozzlesList') and len(tank.get('nozzlesList', [])) > 0:
+            return True
+        if tank.get('antivortexList') and len(tank.get('antivortexList', [])) > 0:
+            return True
+    return False

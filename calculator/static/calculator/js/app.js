@@ -1491,21 +1491,38 @@ async function openNexusProjects() {
         </div>`;
       return;
     }
-    listEl.innerHTML = projects.map(p => `
-      <div class="nexus-project-item">
-        <div class="nexus-project-item-header">
-          <div>
-            <div class="nexus-project-item-name">${_esc(p.client_name)}</div>
-            <div class="nexus-project-item-meta">
-              #${p.log_id} · ${p.tank_count} tank${p.tank_count !== 1 ? 's' : ''} · ${p.created_at}
+    
+    // Updated projects mapping with lock state display
+    listEl.innerHTML = projects.map(p => {
+      const isLocked   = p.is_locked;
+      const lockReason = p.lock_reason || 'Modified in Nexus';
+
+      return `
+        <div class="nexus-project-item ${isLocked ? 'nexus-project-locked' : ''}">
+          <div class="nexus-project-item-header">
+            <div>
+              <div class="nexus-project-item-name">
+                ${isLocked ? '🔒' : '✅'} ${_esc(p.client_name)}
+                ${isLocked ? `<span class="npi-locked-badge">LOCKED</span>` : ''}
+              </div>
+              <div class="nexus-project-item-meta">
+                #${p.log_id} · ${p.tank_count} tank${p.tank_count !== 1 ? 's' : ''} · ${p.created_at}
+                ${isLocked ? `<span class="npi-lock-reason">⚠ ${_esc(lockReason)}</span>` : ''}
+              </div>
             </div>
+            <button
+              class="nexus-project-import-btn ${isLocked ? 'npi-btn-locked' : ''}"
+              ${isLocked ? 'disabled' : ''}
+              onclick='${isLocked ? '' : `importNexusProject(${JSON.stringify(p.log_id)}, ${JSON.stringify(p.client_name)}, ${JSON.stringify(p.payload)})`}'
+              title="${isLocked ? lockReason : 'Import into TankMate'}"
+            >
+              <i class="ri-${isLocked ? 'lock-line' : 'download-line'}"></i>
+              ${isLocked ? 'Locked' : 'Import'}
+            </button>
           </div>
-          <button class="nexus-project-import-btn"
-                  onclick='importNexusProject(${JSON.stringify(p.log_id)}, ${JSON.stringify(p.client_name)}, ${JSON.stringify(p.payload)})'>
-            <i class="ri-download-line"></i> Import
-          </button>
-        </div>
-      </div>`).join('');
+        </div>`;
+    }).join('');
+    
   } catch (err) {
     listEl.innerHTML = `
       <div style="text-align:center;padding:24px;color:#ef4444;">
